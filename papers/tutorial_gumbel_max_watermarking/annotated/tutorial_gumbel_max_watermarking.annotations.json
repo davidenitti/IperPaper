@@ -369,8 +369,8 @@
       "id": "null_hypothesis",
       "kind": "notation",
       "label": "$H_0$",
-      "short": "$H_0$ says the observed text is independent of this secret watermark randomness.",
-      "details": "It includes human text and ordinary unwatermarked model output when their token choices are independent of the secret watermark randomness.",
+      "short": "$H_0$ says the observed text is independent of the secret pseudorandom values.",
+      "details": "It includes human text and ordinary unwatermarked model output when their token choices are independent of the secret pseudorandom values.",
       "background": []
     },
     {
@@ -490,7 +490,7 @@
       "kind": "concept",
       "label": "pivot",
       "short": "The selected value is a pivot because its null distribution is known without the unknown model probabilities.",
-      "details": "Under text independent of the secret watermark randomness, $r_{t,w_t}\\sim\\U(0,1)$ regardless of $\\mathbf p_t$, enabling model-free null calibration for chosen-coordinate detectors.",
+      "details": "Under text independent of the secret pseudorandom values, $r_{t,w_t}\\sim\\U(0,1)$ regardless of $\\mathbf p_t$, enabling model-free null calibration for chosen-coordinate detectors.",
       "background": [
         "Uniform",
         "pivot"
