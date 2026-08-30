@@ -96,7 +96,7 @@
       "kind": "symbol",
       "label": "$r_{t,i}\\in(0,1)$",
       "short": "$r_{t,i}$ is the secret-key-derived value for candidate $i$ at position $t$.",
-      "details": "The ideal analysis treats these values as independent $\\U(0,1)$ variables. In the experimental construction specified by Li et al., the key and preceding tokens determine a PCG-64 seed, and candidate index $i$ selects the $i$th entry of the regenerated vector. NumPy's floating-point generator returns values in $[0,1)$, so an implementation applying logarithms should explicitly avoid exact endpoints.",
+      "details": "The ideal analysis treats these values as independent $\\U(0,1)$ variables. In the implementation described by Li et al., the key and preceding tokens determine a PCG-64 seed, and candidate index $i$ selects the $i$th entry of the regenerated vector. NumPy's floating-point generator returns values in $[0,1)$, so an implementation applying logarithms should explicitly avoid exact endpoints.",
       "background": [
         "Uniform"
       ]
@@ -124,7 +124,7 @@
       "kind": "operator",
       "label": "$\\PRF_{\\Key}(w_{t-m},\\ldots,w_{t-1},i)$",
       "short": "$\\PRF_{\\Key}$ is a pseudorandom function that takes the secret key, the preceding token context, and candidate-token index $i$, and produces a deterministic value $r_{t,i}$ in $(0,1)$ that appears random to someone without the key.",
-      "details": "The same key, context, and candidate index always produce the same value, allowing the generator and verifier to compute $r_{t,i}$ independently. Changing an input is intended to produce a new random-looking value, although finite hash or pseudorandom outputs can collide. The $\\PRF$ notation is the ideal cryptographic abstraction. Li et al.'s experimental construction instead hashes the key and preceding $m$ tokens into a PCG-64 seed; PCG-64 is a general-purpose pseudorandom generator and should not be read as establishing cryptographic PRF security. Both parties must use the same key, tokenization, context rule, hashing method, pseudorandom generator, and candidate ordering.",
+      "details": "The same key, context, and candidate index always produce the same value, allowing the generator and verifier to compute $r_{t,i}$ independently. Changing an input is intended to produce a new random-looking value, although finite hash or pseudorandom outputs can collide. In the implementation described by Li et al., the key and preceding $m$ tokens determine a PCG-64 seed, and $i$ selects the corresponding entry of the generated candidate vector. Both parties must use the same key, tokenization, context rule, hashing method, pseudorandom generator, and candidate ordering.",
       "background": [
         "PRF"
       ]
