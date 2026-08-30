@@ -3,7 +3,7 @@
   "background": {
     "Uniform": {
       "short": "$\\U(0,1)$ denotes the continuous uniform distribution on the unit interval $(0,1)$.",
-      "details": "Every value in $(0,1)$ is equally likely; its CDF is $F(u)=u$ on $0\\le u\\le1$, its mean is $1/2$, and its variance is $1/12$. Strict and non-strict inequalities have the same probability because the distribution is continuous.",
+      "details": "The continuous $\\U(0,1)$ distribution has constant density $f(u)=1$ for $0<u<1$, so intervals of equal length have equal probability. Its CDF is $F(u)=u$ on $0\\le u\\le1$, its mean is $1/2$, and its variance is $1/12$. Strict and non-strict inequalities have the same probability because the distribution is continuous.",
       "link": "https://en.wikipedia.org/wiki/Continuous_uniform_distribution"
     },
     "Exp": {
@@ -23,7 +23,7 @@
     },
     "Gamma": {
       "short": "A Gamma distribution with shape $k>0$ and rate $\\lambda>0$ is a continuous probability distribution on the nonnegative real numbers.",
-      "details": "Its density is $f(x)=\\lambda^k x^{k-1}e^{-\\lambda x}/\\Gamma(k)$ for $x\\ge0$, where $\\Gamma(k)$ is the Gamma function. A sum of $k$ independent exponential variables with common rate $\\lambda$ is Gamma distributed with shape $k$ and rate $\\lambda$; its mean is $k/\\lambda$ and its variance is $k/\\lambda^2$.",
+      "details": "Its density is $f(x)=\\lambda^k x^{k-1}e^{-\\lambda x}/\\Gamma(k)$ for $x\\ge0$, where $\\Gamma(k)$ is the Gamma function. When $k$ is a positive integer, a sum of $k$ independent exponential variables with common rate $\\lambda$ is Gamma distributed with shape $k$ and rate $\\lambda$; its mean is $k/\\lambda$ and its variance is $k/\\lambda^2$.",
       "link": "https://en.wikipedia.org/wiki/Gamma_distribution",
       "background": [
         "GammaFunction"
@@ -96,7 +96,7 @@
       "kind": "symbol",
       "label": "$r_{t,i}\\in(0,1)$",
       "short": "$r_{t,i}$ is the secret-key-derived value for candidate $i$ at position $t$.",
-      "details": "The ideal analysis treats these values as independent $\\U(0,1)$ variables. In the implementation described by Li et al., the key and preceding tokens determine a PCG-64 seed, and candidate index $i$ selects the $i$th entry of the regenerated vector.",
+      "details": "The ideal analysis treats these values as independent $\\U(0,1)$ variables. In the experimental construction specified by Li et al., the key and preceding tokens determine a PCG-64 seed, and candidate index $i$ selects the $i$th entry of the regenerated vector. NumPy's floating-point generator returns values in $[0,1)$, so an implementation applying logarithms should explicitly avoid exact endpoints.",
       "background": [
         "Uniform"
       ]
@@ -124,7 +124,7 @@
       "kind": "operator",
       "label": "$\\PRF_{\\Key}(w_{t-m},\\ldots,w_{t-1},i)$",
       "short": "$\\PRF_{\\Key}$ is a pseudorandom function that takes the secret key, the preceding token context, and candidate-token index $i$, and produces a deterministic value $r_{t,i}$ in $(0,1)$ that appears random to someone without the key.",
-      "details": "The same key, context, and candidate index always produce the same value, allowing the generator and verifier to compute $r_{t,i}$ independently. Changing an input is intended to produce a new random-looking value, although finite hash or pseudorandom outputs can collide. In the implementation described by Li et al., the key and preceding $m$ tokens determine a PCG-64 seed, and $i$ selects the corresponding entry of the generated candidate vector. Both parties must use the same key, tokenization, context rule, hashing method, pseudorandom generator, and candidate ordering.",
+      "details": "The same key, context, and candidate index always produce the same value, allowing the generator and verifier to compute $r_{t,i}$ independently. Changing an input is intended to produce a new random-looking value, although finite hash or pseudorandom outputs can collide. The $\\PRF$ notation is the ideal cryptographic abstraction. Li et al.'s experimental construction instead hashes the key and preceding $m$ tokens into a PCG-64 seed; PCG-64 is a general-purpose pseudorandom generator and should not be read as establishing cryptographic PRF security. Both parties must use the same key, tokenization, context rule, hashing method, pseudorandom generator, and candidate ordering.",
       "background": [
         "PRF"
       ]
@@ -370,7 +370,7 @@
       "kind": "notation",
       "label": "$H_0$",
       "short": "$H_0$ says the observed text is independent of this secret watermark randomness.",
-      "details": "It includes human text and ordinary unwatermarked model output when neither has access to the tested key.",
+      "details": "It includes human text and ordinary unwatermarked model output when their token choices are independent of the tested keyed pseudorandom field. Lack of access to the key is normally sufficient in the ideal model, but does not by itself rule out correlations inherited from copied or watermarked context.",
       "background": []
     },
     {
@@ -429,7 +429,7 @@
       "kind": "equation",
       "label": "$S_T\\sim\\Gam(\\text{shape}=T,\\text{rate}=1)$",
       "short": "Under independent effective positions, $S_T$ has a Gamma distribution with shape $T$ and rate one.",
-      "details": "It is the sum of $T$ independent $\\Exp(1)$ scores, so its null mean and variance are both $T$.",
+      "details": "It is the sum of $T$ independent $\\Exp(1)$ scores, so its null mean and variance are both $T$. Repeated-context or pseudorandom collisions can violate this independence, in which case the simple Gamma calibration need not apply.",
       "background": [
         "Gamma",
         "Exp"
@@ -490,7 +490,7 @@
       "kind": "concept",
       "label": "pivot",
       "short": "The selected value is a pivot because its null distribution is known without the unknown model probabilities.",
-      "details": "Under key-independent text, $r_{t,w_t}\\sim\\U(0,1)$ regardless of $\\mathbf p_t$, enabling model-free null calibration for chosen-coordinate detectors.",
+      "details": "Under text independent of the tested keyed pseudorandom field, $r_{t,w_t}\\sim\\U(0,1)$ regardless of $\\mathbf p_t$, enabling model-free null calibration for chosen-coordinate detectors.",
       "background": [
         "Uniform",
         "pivot"
