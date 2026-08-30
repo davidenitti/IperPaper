@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iperpaper"
+version = "0.2.0"
+description = "Compile annotated TeX papers into interactive PDF-backed and native HTML readers."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = ["pybtex>=0.24", "pypdf>=5.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[project.scripts]
+iperpaper = "iperpaper:main"
+
+[tool.setuptools]
+py-modules = ["bib_utils", "iperpaper", "iperpaper_native_html"]
+packages = ["iperpaper_templates"]
+
+[tool.setuptools.package-data]
+iperpaper_templates = ["*.html", "*.sty"]

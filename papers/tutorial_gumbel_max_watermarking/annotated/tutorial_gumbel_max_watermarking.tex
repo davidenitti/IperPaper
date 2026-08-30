@@ -1,0 +1,839 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=24mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs,array,tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage[most]{tcolorbox}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{tikz}
+\usepackage{iperpaper-levels}
+\usetikzlibrary{arrows.meta,positioning,fit}
+
+% ---------------------------------------------------------------------
+% READING-LEVEL SWITCHES
+% ---------------------------------------------------------------------
+% Level 2 is included by default, as required for the interactive HTML.
+% For a separate Level-1-only PDF, use \IperPaperShowLevelTwofalse.
+
+% ---------------------------------------------------------------------
+% COLORS / TYPOGRAPHY
+% ---------------------------------------------------------------------
+\definecolor{Lone}{HTML}{16324F}
+\definecolor{Ltwo}{HTML}{276B74}
+\definecolor{WarningAccent}{HTML}{7A4E2D}
+\definecolor{LightBlue}{HTML}{EEF5FA}
+\definecolor{LightGreen}{HTML}{EEF7F3}
+\definecolor{LightGold}{HTML}{FBF6E9}
+\definecolor{LightGray}{HTML}{F4F5F7}
+\definecolor{DarkGray}{HTML}{3F4650}
+
+% ---------------------------------------------------------------------
+% AUTHOR: replace the next line only.
+% ---------------------------------------------------------------------
+\newcommand{\TutorialAuthor}{Davide Nitti}
+
+\definecolor{iperpaperlink}{HTML}{0000AA}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=iperpaperlink,
+  citecolor=iperpaperlink,
+  urlcolor=iperpaperlink,
+  pdftitle={A Tutorial on Gumbel-Max Watermarking for Language Models},
+  pdfauthor={\TutorialAuthor}
+}
+
+\DeclareRobustCommand{\iperpaper}[2]{%
+  \begingroup
+  \hypersetup{pdfborder=0 0 0}%
+  \href{iperpaper:#1}{{\color{iperpaperlink}#2}}%
+  \endgroup
+}
+\pdfstringdefDisableCommands{%
+  \def\iperpaper#1#2{#2}%
+  \def\hyperlink#1#2{#2}%
+}
+
+\titleformat{\section}[block]
+  {\Large\bfseries\color{Lone}}
+  {\thesection}
+  {0.6em}{}
+\titleformat{\subsection}[block]
+  {\large\bfseries\color{Ltwo}}
+  {\thesubsection}
+  {0.6em}{}
+\titlespacing*{\section}{0pt}{2.3ex plus .5ex}{1.0ex}
+\titlespacing*{\subsection}{0pt}{1.8ex plus .3ex}{0.7ex}
+
+\newtcolorbox{intuitionbox}{
+  enhanced, breakable, colback=LightBlue, colframe=Lone,
+  boxrule=0.7pt, arc=2mm, title={Intuition}, fonttitle=\bfseries
+}
+\newtcolorbox{keybox}{
+  enhanced, breakable, colback=LightGreen, colframe=Ltwo,
+  boxrule=0.7pt, arc=2mm, title={Key point}, fonttitle=\bfseries
+}
+\newtcolorbox{warningbox}{
+  enhanced, breakable, colback=LightGold, colframe=WarningAccent,
+  boxrule=0.7pt, arc=2mm, title={Important qualification}, fonttitle=\bfseries
+}
+\newtcolorbox{notationbox}{
+  enhanced, breakable, colback=LightGray, colframe=DarkGray,
+  boxrule=0.5pt, arc=2mm, title={Notation}, fonttitle=\bfseries
+}
+
+\newcommand{\U}{\operatorname{Uniform}}
+\newcommand{\Exp}{\operatorname{Exp}}
+\newcommand{\Beta}{\operatorname{Beta}}
+\newcommand{\Gam}{\operatorname{Gamma}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Pp}{\mathbb{P}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\Key}{\mathtt{Key}}
+\newcommand{\PRF}{\operatorname{PRF}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{A tutorial on Gumbel-max watermarking}
+\rhead{\thepage/\pageref*{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{14pt}
+
+\setlist[itemize]{leftmargin=1.5em,topsep=0.4em,itemsep=0.25em}
+\setlist[enumerate]{leftmargin=1.7em,topsep=0.4em,itemsep=0.35em}
+
+\begin{document}
+
+\begin{center}
+  \parbox{0.96\textwidth}{%
+    \centering
+    \fontsize{21}{28}\selectfont\bfseries\color{Lone}
+    \mbox{A Tutorial on Gumbel-Max Watermarking}
+    \mbox{for Language Models}\par
+  }
+  \vspace{0.75em}
+
+  {\large \TutorialAuthor}
+\end{center}
+
+\vspace{1.0em}
+\section*{How to read this tutorial}
+This tutorial was made with IperPaper, a project designed to improve the experience of reading academic papers.
+
+Interactive elements work as follows:
+\begin{itemize}
+\item Hover over an equation reference, such as Equation~\eqref{eq:generation}, to preview the referenced equation. Click it to jump to the equation.
+\item Hover over a citation, such as Aaronson and Kirchner~\cite{aaronson2022}, to preview the bibliography entry. Click it to open a verified paper PDF or an explicit linked resource in a new tab when available; otherwise, it jumps to the reference.
+\item References to figures and tables also show a preview of the figure or table when you hover over them, although this tutorial contains no example of either kind of reference.
+\item Some equations, derivation steps, and terms are blue. For example, hover over \iperpaper{tutorial_annotation_example}{this annotated phrase} for a short explanation, or click it to open the full explanation in the side panel.
+\item In the background sections of a full explanation, a blue section title is a link to the corresponding Wikipedia page.
+\item Select any text to open a small menu where you can ask ChatGPT or Perplexity to explain the selected passage.
+\item Use the \emph{Split} button at the top of the reader to switch between the default layout and a split layout that keeps the paper and explanation panel side by side.
+\end{itemize}
+
+The tutorial has two levels of detail. Level 1 is the self-contained main text. Level 2 adds optional explanations and derivations. Click a Level 2 heading to expand or collapse its content.
+
+\begin{leveltwo}{Example Level 2 detail (click to expand or collapse)}
+This short paragraph is optional Level 2 content.
+It appears and disappears while the self-contained reading guide above remains visible.
+\end{leveltwo}
+
+I used GPT-5.6 to help draft this tutorial and generate the annotations; the content was carefully reviewed, and the formulas were manually checked. If you find an error or have a suggestion, please open an issue: \url{https://github.com/davidenitti/IperPaper/issues}
+
+% =====================================================================
+\section{Introduction}
+
+Large language models generate text by repeatedly sampling a next token from a probability distribution. Detecting machine-generated text purely from style or linguistic artifacts is difficult and can be unreliable. Statistical watermarking takes a different approach: the generator deliberately introduces a secret, key-dependent statistical signal during sampling, so that an authorized verifier can later test for that signal \cite{aaronson2022,li2025}.
+
+A useful watermark should satisfy two goals. First, generation quality should remain essentially unchanged; ideally, the next-token distribution should be exactly the distribution the language model intended to sample from. Second, the emitted tokens should retain a detectable relationship with secret pseudorandomness known to the verifier. The Gumbel-max construction achieves both goals in an idealized pseudorandom model by changing the \emph{coupling} between the model's sampling probabilities and the hidden randomness, rather than changing the probabilities themselves \cite{aaronson2022,li2025}.
+
+The detection problem is therefore a statistical hypothesis test. The hypotheses are
+\begin{align*}
+H_0 &: \text{the observed token choices are independent of this secret watermark key},\\
+H_1 &: \text{the text was generated using the keyed Gumbel-max watermark}.
+\end{align*}
+This distinction is important: the detector is not a generic ``human versus LLM'' classifier. Human-written text and output from an unwatermarked LLM both fall under the same null model when neither has access to the watermark key. The verifier is testing for a specific secret correlation \cite{li2025}.
+
+The tutorial develops the original Gumbel-max generation and detection mechanism from first principles, including the exponential-race argument, how the secret pseudorandom values are regenerated from a text, and the exact null distribution of the original score. It concludes with later results on edits, repeated pseudorandom inputs, diversity, and sequential detection \cite{li2025,fu2024,liedits2025,cai2025collision,huang2026,luo2026}.
+
+% =====================================================================
+\section{Notation and setup}
+
+At token position $t$, the language model assigns a probability to every candidate token $i$:
+\[
+  \iperpaper{model_distribution}{\mathbf p_t=(p_{t,1},\ldots,p_{t,V})},
+  \qquad \iperpaper{probability_normalization}{\sum_{i=1}^{V}p_{t,i}=1}.
+\]
+The watermark also assigns every candidate token a secret-key-derived pseudorandom value
+\[
+  \iperpaper{keyed_uniform}{r_{t,i}\in(0,1)}.
+\]
+The token actually emitted at position $t$ is denoted $\iperpaper{emitted_token}{w_t}$. Therefore the secret value associated with the token that actually appeared is simply $\iperpaper{selected_value}{r_{t,w_t}}$.
+It is not a different kind of random variable: it is the entry $i=w_t$ selected from
+\[
+  (r_{t,1},\ldots,r_{t,V}).
+\]
+This selected value $\iperpaper{selected_value}{r_{t,w_t}}$ is the central quantity used by the detector \cite{aaronson2022,li2025}.
+
+% \begin{notationbox}
+% \begin{itemize}
+% \item $t$: position in the token sequence;
+% \item $i$: a candidate next-token index;
+% \item $p_{t,i}$: the next-token probability assigned to candidate $i$;
+% \item $r_{t,i}$: the secret pseudorandom value for candidate $i$ at position $t$;
+% \item $w_t$: the token that was actually emitted;
+% \item $r_{t,w_t}$: the secret value attached to that emitted token.
+% \end{itemize}
+% \end{notationbox}
+
+\section{How the indices encode the generation context}
+The ideal analysis models the vector $(r_{t,1},\ldots,r_{t,V})$ as independent $\iperpaper{uniform_ideal_model}{\U(0,1)}$ variables. A real implementation derives each value deterministically from the secret key, a prescribed preceding context, and the candidate-token index. If the context window has length $m$, its inputs are the last $m$ emitted token identities:
+\[
+  r_{t,i}=\iperpaper{keyed_prf}{\PRF_{\Key}(w_{t-m},\ldots,w_{t-1},i)}.
+\]
+Here \(\PRF\) means \emph{pseudorandom function}. For a fixed key it is deterministic, but to an observer without the key its outputs are intended to be computationally indistinguishable from random values. Treating the $r_{t,i}$ values as independent $\U(0,1)$ variables is the ideal statistical model, not a claim that the implementation produces literal randomness.
+The generator and verifier must use exactly the same context rule and token encoding \cite{li2025}.
+
+One possible implementation, used in the simulations of Li et al., concatenates
+the preceding $m$ tokens with the key and applies a hash function $A$ to obtain a
+seed. That seed initializes the PCG-64 pseudorandom generator:
+\[
+  \operatorname{seed}_t
+  =A(w_{t-m},\ldots,w_{t-1},\Key),
+  \qquad
+  (r_{t,1},\ldots,r_{t,V})
+  =\operatorname{PCG64}(\operatorname{seed}_t).
+\]
+The second equality is shorthand for drawing the required vector of values in
+$(0,1)$ from the initialized generator; candidate $i$ receives its $i$th entry.
+Li et al. use $m=5$ and NumPy's PCG-64 generator in this implementation. The
+independent $\U(0,1)$ behavior used in the analysis is an idealization of these
+deterministic pseudorandom outputs \cite{li2025}.
+
+Changing the key or any context token changes the seed and therefore the random-looking vector; changing $i$ selects another coordinate. For a fixed key and context, every candidate $i$ gets a reproducible number. A verifier with the same key and the same tokenization, context, hashing, and pseudorandom-generator conventions can later recompute the same $r_{t,i}$ values from the observed text \cite{aaronson2022,li2025}.
+
+\begin{leveltwo}{Why the values are taken in \texorpdfstring{$(0,1)$}{(0,1)}}
+The ideal model treats each $r_{t,i}$ as continuous Uniform$(0,1)$. Exact endpoints have probability zero. In an implementation it is convenient to map PRF bits into the open interval $(0,1)$ because the construction uses $\log r_{t,i}$ and the original detector uses $\log(1-r_{t,w_t})$, which are singular at 0 or 1.
+\end{leveltwo}
+
+% =====================================================================
+\section{Watermarked generation}
+
+At position $t$, the generator has two ingredients: the model probabilities $p_{t,i}$ and a secret pseudorandom value $r_{t,i}$ for every candidate token $i$ with $p_{t,i}>0$. It outputs the token ID:
+\begin{equation}
+  \iperpaper{emitted_token}{w_t}=\iperpaper{generation_argmax}{\argmax_{i:p_{t,i}>0}} \iperpaper{generation_score}{r_{t,i}^{1/p_{t,i}}}.
+  \label{eq:generation}
+\end{equation}
+The power-form rule has the following equivalent logarithmic and minimum forms:
+\begin{equation}
+\begin{aligned}
+  \iperpaper{emitted_token}{w_t}
+  &=\iperpaper{derivation_power_form}{\argmax_{i:p_{t,i}>0}r_{t,i}^{1/p_{t,i}}}\\
+  &=\iperpaper{derivation_monotone_log}{\argmax_{i:p_{t,i}>0}\log\!\left(r_{t,i}^{1/p_{t,i}}\right)}\\
+  &=\iperpaper{derivation_log_power}{\argmax_{i:p_{t,i}>0}\frac{1}{p_{t,i}}\log r_{t,i}}\\
+  &=\iperpaper{derivation_fraction_form}{\argmax_{i:p_{t,i}>0}\frac{\log r_{t,i}}{p_{t,i}}}\\
+  &=\iperpaper{derivation_sign_reversal}{\argmin_{i:p_{t,i}>0}\frac{-\log r_{t,i}}{p_{t,i}}}
+  =\argmin_{i:p_{t,i}>0}\iperpaper{race_time}{X_{t,i}}.
+\end{aligned}
+  \label{eq:log-min-forms}
+\end{equation}
+Where we define $\iperpaper{race_time}{X_{t,i}:=(-\log r_{t,i})/p_{t,i}}$.
+Zero-probability tokens are outside the support and cannot be selected.
+
+The crucial property is
+\begin{equation}
+  \iperpaper{unbiasedness}{\Pp(w_t=i\mid\mathbf p_t)=p_{t,i}}.
+  \label{eq:unbiased-summary}
+\end{equation}
+Thus the watermark does \emph{not} change the marginal next-token distribution when we average over the hidden pseudorandomness. Instead it changes the \emph{coupling}: which realization of the secret randomness is associated with which emitted token \cite{aaronson2022,li2025}.
+
+
+% =====================================================================
+\section{Why the generation rule preserves the model probabilities}
+
+If $r_{t,i}\sim\U(0,1)$, then
+$\iperpaper{unit_exponential_transform}{-\log r_{t,i}\sim\Exp(\text{rate}=1)}$.
+
+\begin{leveltwo}{Proof that \texorpdfstring{$-\log r_{t,i}\sim\Exp(\text{rate}=1)$}{-log r is unit exponential}}
+An \iperpaper{exponential_distribution_concept}{exponential distribution} with rate
+$\lambda>0$ is a probability distribution on $[0,\infty)$. If
+$Y\sim\Exp(\text{rate}=\lambda)$, its density and survival function are
+\[
+  \iperpaper{exponential_distribution_survival}{
+  f_Y(x)=\lambda e^{-\lambda x},
+  \qquad
+  \Pp(Y>x)=e^{-\lambda x},
+  \qquad x\ge0.}
+\]
+The rate controls how quickly the tail decays, and the mean is $1/\lambda$.
+For rate $1$, the survival function is therefore $e^{-x}$.
+
+\begin{samepage}
+Define the nonnegative transformed variable
+\[
+  \iperpaper{unit_exponential_variable}{Y_{t,i}:=-\log r_{t,i}}.
+\]
+It is nonnegative because $0<r_{t,i}<1$ implies $\log r_{t,i}<0$.
+For any $x\ge0$, compute its survival probability step by step:
+\begin{align*}
+  \Pp(Y_{t,i}>x)
+  &=\iperpaper{unit_exp_substitution}{\Pp(-\log r_{t,i}>x)}\\
+  &=\iperpaper{unit_exp_sign_reversal}{\Pp(\log r_{t,i}<-x)}\\
+  &=\iperpaper{unit_exp_monotone_exponential}{\Pp(r_{t,i}<e^{-x})}\\
+  &=\iperpaper{unit_exp_uniform_cdf}{e^{-x}}.
+\end{align*}
+The final expression is exactly the survival function of
+$\Exp(\text{rate}=1)$. For $x<0$, both survival probabilities equal $1$
+because $Y_{t,i}\ge0$. Hence
+$Y_{t,i}=-\log r_{t,i}\sim\Exp(\text{rate}=1)$.
+\end{samepage}
+\end{leveltwo}
+
+Since $-\log r_{t,i}\sim\Exp(\text{rate}=1)$, the definition $X_{t,i}=(-\log r_{t,i})/p_{t,i}$, given immediately after Equation~\eqref{eq:log-min-forms}, implies that
+\[
+  \iperpaper{race_distribution}{X_{t,i}\sim\Exp(\text{rate}=p_{t,i})},
+\]
+
+\begin{leveltwo}{Why dividing by \texorpdfstring{$p_{t,i}$}{pti} changes the exponential rate}
+Let $E=-\log r_{t,i}$. Because $r_{t,i}\sim\U(0,1)$, $E\sim\Exp(1)$. For
+\[
+  X_{t,i}=\frac{E}{p_{t,i}},
+\]
+and $x\ge0$,
+\begin{align*}
+\Pp(X_{t,i}>x)
+&=\Pp\!\left(E>p_{t,i}x\right)\\
+&=e^{-p_{t,i}x}.
+\end{align*}
+That is exactly the survival function of an exponential random variable with rate $p_{t,i}$. Thus $X_{t,i}\sim\Exp(p_{t,i})$. Larger $p_{t,i}$ means a distribution more concentrated near zero, which makes that candidate more likely to attain the minimum.
+\end{leveltwo}
+
+
+From Equation~\eqref{eq:log-min-forms}, $w_t=\argmin_{i:p_{t,i}>0}X_{t,i}$, so $w_t$ is the candidate with the smallest value among independent exponential random variables with rates $p_{t,1},\ldots,p_{t,V}$.
+
+For independent exponential random variables with rates $p_{t,1},\ldots,p_{t,V}$, the probability that candidate $i$ has the minimum is
+\[
+  \Pp(X_{t,i}=\min_jX_{t,j})
+  =\frac{p_{t,i}}{\sum_jp_{t,j}}.
+\]
+Because the model probabilities sum to one,
+\[
+  \iperpaper{exponential_race}{\Pp(X_{t,i}=\min_jX_{t,j})=p_{t,i}}.
+\]
+This identity is commonly called an \iperpaper{exponential_race_concept}{\emph{exponential race}}. It proves Equation~\eqref{eq:unbiased-summary} and is the mathematical reason the watermark preserves the model's categorical distribution exactly while still coupling the output to secret randomness.
+
+\begin{leveltwo}{Conceptual picture: exponential waiting times and races}
+An \iperpaper{exponential_distribution_concept}{exponential distribution} is often
+used to model the waiting time until an event occurs when the event has a constant
+rate. Conceptual examples include waiting for a request to arrive, for a component
+to fail, or for a radioactive particle to decay. Its memoryless property means
+that, after waiting without seeing the event, the distribution of the remaining
+wait is unchanged.
+
+To picture an \iperpaper{exponential_race_concept}{exponential race}, imagine one
+independent clock for each candidate token. Each clock is assigned an exponential
+waiting time, with its rate determined by the model probability of that candidate.
+A more probable candidate has a higher rate and therefore tends to ring sooner,
+although the random draw means that it does not win every race. The candidate
+whose clock rings first is selected. The probability that a particular clock
+rings first is its rate divided by the sum of all rates. Because the rates here
+are the model probabilities and those probabilities sum to one, candidate $i$
+wins with probability $p_{t,i}$.
+
+No physical clock runs during watermark generation. The auxiliary value
+$X_{t,i}=(-\log r_{t,i})/p_{t,i}$ plays the mathematical role of that candidate's
+waiting time, and selecting the smallest $X_{t,i}$ is equivalent to selecting the
+first clock to ring.
+\end{leveltwo}
+
+\begin{leveltwo}{Step-by-step derivation of the exponential-race identity}
+Fix a candidate $i$. The probability of selecting candidate $i$, i.e. $w_t=i$, is
+\[
+  \Pp(w_t=i)
+  =\Pp\!\left(X_{t,i}<X_{t,j}\ \text{for every }j\ne i\right).
+\]
+Because the exponential variables are continuous, ties have probability zero, so using $<$ or saying that $X_{t,i}$ is the minimum gives the same probability.
+
+\textbf{Step 1: integrate over the possible value of $X_{t,i}$.}
+If $X_{t,i}$ takes a value near $x$, candidate $i$ is the minimum exactly when every other variable is larger than $x$. First write
+\[
+  \Pp(i\text{ is selected})
+  =\int_0^\infty
+    \Pp(i\text{ is selected}\mid X_{t,i}=x)\,
+    f_i(x)\,dx.
+\]
+This is the \emph{continuous law of total probability}, also described as conditioning on $X_{t,i}$: it averages the conditional selection probability over every possible value $x$, weighted by the density $f_i(x)$.
+
+Given $X_{t,i}=x$, candidate $i$ is selected exactly when $X_{t,j}>x$ for every $j\ne i$. Independence means that conditioning on $X_{t,i}=x$ does not change the distributions of the other variables. Therefore,
+\[
+  \Pp(i\text{ is selected})
+  =\int_0^\infty
+    f_i(x)\,
+    \Pp(X_{t,j}>x\ \text{for all }j\ne i)
+    \,dx.
+\]
+
+\textbf{Step 2: insert the exponential density and survival functions.}
+For $X_{t,i}\sim\Exp(p_{t,i})$,
+\[
+  f_i(x)=p_{t,i}e^{-p_{t,i}x},\qquad x\ge0.
+\]
+For each $j\ne i$,
+\[
+  \Pp(X_{t,j}>x)=e^{-p_{t,j}x}.
+\]
+Since the $X_{t,j}$ are independent,
+\[
+  \Pp(X_{t,j}>x\ \text{for all }j\ne i)
+  =\prod_{j\ne i}e^{-p_{t,j}x}.
+\]
+Thus
+\begin{align*}
+  \Pp(i\text{ is selected})
+  &=\int_0^\infty
+      p_{t,i}e^{-p_{t,i}x}
+      \prod_{j\ne i}e^{-p_{t,j}x}\,dx.
+\end{align*}
+
+\textbf{Step 3: combine the exponential factors.}
+Using $e^ae^b=e^{a+b}$,
+\begin{align*}
+  e^{-p_{t,i}x}\prod_{j\ne i}e^{-p_{t,j}x}
+  &=e^{-x\sum_jp_{t,j}},
+\end{align*}
+so
+\[
+  \Pp(i\text{ is selected})
+  =p_{t,i}\int_0^\infty e^{-x\sum_jp_{t,j}}\,dx.
+\]
+
+\textbf{Step 4: evaluate the integral.}
+For any $a>0$,
+\[
+  \int_0^\infty e^{-ax}\,dx=\frac1a.
+\]
+Taking $a=\sum_jp_{t,j}$ gives
+\[
+  \Pp(i\text{ is selected})
+  =\frac{p_{t,i}}{\sum_jp_{t,j}}.
+\]
+
+\textbf{Step 5: use normalization of the model probabilities.}
+Since $\sum_jp_{t,j}=1$,
+\[
+  \Pp(i\text{ is selected})=p_{t,i}.
+\]
+This completes the proof of Eq.~\eqref{eq:unbiased-summary}.
+\end{leveltwo}
+
+\begin{leveltwo}{Connection with the classical Gumbel-max sampler}
+A \iperpaper{gumbel_distribution}{Gumbel distribution} is a probability distribution on the real line that is commonly used to describe random extremes, such as a maximum. Here its practical role is simpler: it supplies one independent random noise value for each candidate token. A \emph{standard} Gumbel random variable $G$ has cumulative distribution function
+\[
+  \Pp(G\le g)=e^{-e^{-g}}, \qquad g\in\mathbb R.
+\]
+It can take any real value; most draws are moderate, while occasional large positive draws allow a lower-probability candidate to win.
+
+\begin{samepage}
+The \iperpaper{gumbel_max_sampler}{Gumbel-max sampler} is a recipe for drawing one category from probabilities $(p_{t,1},\ldots,p_{t,V})$:
+\begin{enumerate}
+\item draw an independent standard Gumbel value $G_{t,i}$ for every candidate $i$;
+\item give candidate $i$ the score $\log p_{t,i}+G_{t,i}$;
+\item output the candidate with the largest score.
+\end{enumerate}
+\end{samepage}
+The term $\log p_{t,i}$ gives more probable candidates a larger baseline score, while $G_{t,i}$ randomizes the winner. The remarkable fact is that this competition is an exact categorical sampler:
+\[
+  \Pp\!\left(i=\argmax_j\{\log p_{t,j}+G_{t,j}\}\right)=p_{t,i}.
+\]
+For example, if two candidates have probabilities $0.8$ and $0.2$, repeating the procedure makes them win $80\%$ and $20\%$ of the time, respectively---not necessarily on any single draw, but across repeated independent draws.
+
+In this watermark, the Gumbel values are not generated as a separate source of randomness. They are obtained deterministically from the secret keyed uniform values. Define
+\[
+  \iperpaper{gumbel_noise}{G_{t,i}=-\log(-\log r_{t,i})}.
+\]
+When the keyed values behave like independent uniforms, this transformation makes the $G_{t,i}$ behave like independent standard Gumbel draws. Thus the generator and verifier can reproduce the same hidden noise from the key. In terms of $G_{t,i}$, the minimum form in Eq.~\eqref{eq:log-min-forms} is equivalent to
+\begin{align*}
+\argmin_i\frac{-\log r_{t,i}}{p_{t,i}}
+&=\argmax_i\left[-\log\left(\frac{-\log r_{t,i}}{p_{t,i}}\right)\right]\\
+&=\argmax_i\left(\log p_{t,i}-\log(-\log r_{t,i})\right)\\
+&=\argmax_i\bigl(\log p_{t,i}+G_{t,i}\bigr).
+\end{align*}
+The first equality holds because $-\log x$ is strictly decreasing on $(0,\infty)$: minimizing a positive quantity is the same as maximizing its negative logarithm. The final expression is exactly the three-step Gumbel-max rule above. The exponential-race proof earlier in this section explains why its winning probabilities are the desired $p_{t,i}$ values.
+
+\end{leveltwo}
+
+\begin{leveltwo}{Verifying that \texorpdfstring{$G_{t,i}$}{Gti} is standard Gumbel}
+If $r_{t,i}\sim\U(0,1)$, then for any $g\in\mathbb R$,
+\begin{align*}
+\Pp(G_{t,i}\le g)
+&=\Pp\!\left(-\log(-\log r_{t,i})\le g\right)\\
+&=\Pp\!\left(\log(-\log r_{t,i})\ge -g\right)\\
+&=\Pp\!\left(-\log r_{t,i}\ge e^{-g}\right)\\
+&=\Pp\!\left(r_{t,i}\le e^{-e^{-g}}\right)\\
+&=e^{-e^{-g}}.
+\end{align*}
+This is the CDF of a standard Gumbel random variable. Thus the two appearances of $\log$ in $G_{t,i}=-\log(-\log r_{t,i})$ are not a typographical error; they are exactly the transform that converts a uniform variable into a standard Gumbel variable.
+\end{leveltwo}
+
+% =====================================================================
+\section{Regenerating secret values from observed text}
+
+A text by itself does \textbf{not} reveal the secret pseudorandom numbers. To verify the watermark one needs the correct secret key and the exact PRF/tokenization conventions. With those, the verifier does not ``extract'' the values from the text; it \textbf{recomputes} them.
+
+For each eligible position $t$ in the observed token sequence $w_1,\ldots,w_T$, the verifier computes
+\[
+  r_{t,w_t}=\PRF_{\Key}(\text{prescribed context},w_t).
+\]
+It therefore obtains the one-dimensional sequence
+\[
+  r_{1,w_1},r_{2,w_2},\ldots,r_{T,w_T},
+\]
+without needing to reconstruct the whole vector $(r_{t,1},\ldots,r_{t,V})$ and, for the original Aaronson detector, without needing the model probabilities $p_{t,i}$.
+
+The verification pipeline is:
+\begin{enumerate}
+\item tokenize the text exactly as the watermark scheme does;
+\item at each scorable position, reconstruct the prescribed context;
+\item evaluate the keyed PRF on that context and the observed token $w_t$;
+\item feed the resulting $r_{t,w_t}$ values to the statistical detector.
+\end{enumerate}
+
+\begin{keybox}
+The hidden signal is not ``a list of numbers stored inside the text.'' It is a \textbf{key-dependent correlation} between the observed tokens and numbers that an authorized verifier can regenerate.
+\end{keybox}
+
+\begin{leveltwo}{What must match exactly in an implementation}
+A verifier generally needs the same secret key, tokenizer and token IDs, context-window rule, PRF or keyed hash, domain-separation/salting convention, and hash-to-$(0,1)$ conversion used by the generator. If the scheme masks repeated contexts or uses other bookkeeping, that convention must also match.
+
+Finite-context seeding has one useful synchronization property: after a local insertion or deletion, the PRF inputs may be wrong for several subsequent positions, but once the edit leaves the context window, later contexts can match again. That does not make the scheme fully edit-robust, but it explains why small local edits need not destroy all later evidence.
+
+\end{leveltwo}
+
+\begin{leveltwo}{Why detection needs only the chosen coordinate}
+Generation must compare candidates, so it conceptually needs the whole pseudorandom vector. Detection already observes the chosen index $w_t$. The original statistic depends only on $r_{t,w_t}$, so generating the unused coordinates would add no information for that test. This distinction is computationally important when the vocabulary is large.
+\end{leveltwo}
+
+% =====================================================================
+\section{Detection as a hypothesis test}
+
+The correct statistical question is not ``human or LLM?'' but
+\begin{align*}
+\iperpaper{null_hypothesis}{H_0} &: \text{the observed text is independent of this secret watermark randomness},\\
+\iperpaper{watermarked_hypothesis}{H_1} &: \text{the text was generated with the keyed Gumbel-max watermark}.
+\end{align*}
+Under the ideal null model,
+\begin{equation}
+  \iperpaper{null_pivot_distribution}{r_{t,w_t}\sim\U(0,1)}.
+  \label{eq:nullr}
+\end{equation}
+Thus
+\[
+  \E_0[r_{t,w_t}]=\frac12,
+  \qquad
+  \Var_0(r_{t,w_t})=\frac1{12}.
+\]
+This applies both to human text and to an ordinary unwatermarked LLM, provided the observed token choice is independent of the secret key. The test is therefore a \emph{watermark-presence test}, not a generic AI-writing test \cite{li2025}.
+
+Under watermarking, the selected value $r_{t,w_t}$ is biased toward 1. Conditional on the next-token distribution $\mathbf p_t$,
+\begin{equation}
+  \iperpaper{alternative_pivot_cdf}{\Pp_1(r_{t,w_t}\le x\mid\mathbf p_t)
+  =\sum_i p_{t,i}\,x^{1/p_{t,i}}},
+  \qquad 0\le x\le1,
+  \label{eq:altcdf-main}
+\end{equation}
+
+\begin{leveltwo}{Derivation of the alternative CDF}
+Let
+\[
+  \mathcal S_t=\{i:p_{t,i}>0\}
+\]
+be the support of the next-token distribution. Then
+$\sum_{i\in\mathcal S_t}p_{t,i}=1$. Recall that, conditional on
+$\mathbf p_t$, the ideal model treats the values $r_{t,i}$ as independent
+$\U(0,1)$ random variables and the watermarked generator selects
+\[
+  w_t=\argmax_{i\in\mathcal S_t} r_{t,i}^{1/p_{t,i}}.
+\]
+The variables are continuous, so ties have probability zero.
+
+Fix $i\in\mathcal S_t$ and condition on $r_{t,i}=u$, where $0<u<1$.
+Candidate $i$ wins exactly when, for every $j\in\mathcal S_t$ with $j\ne i$,
+\[
+  r_{t,j}^{1/p_{t,j}}\le u^{1/p_{t,i}}
+  \quad\Longleftrightarrow\quad
+  r_{t,j}\le u^{p_{t,j}/p_{t,i}}.
+\]
+Because $r_{t,j}\sim\U(0,1)$ and $0<u^{p_{t,j}/p_{t,i}}<1$, each competing
+candidate satisfies
+\[
+  \Pp\!\left(r_{t,j}\le u^{p_{t,j}/p_{t,i}}\right)
+  =u^{p_{t,j}/p_{t,i}}.
+\]
+Independence across candidates therefore gives
+\begin{align*}
+&\Pp_1(w_t=i\mid r_{t,i}=u,\mathbf p_t)\\
+&\quad=\prod_{\substack{j\in\mathcal S_t\\j\ne i}}
+u^{p_{t,j}/p_{t,i}}\\
+&\quad=u^{\left(\sum_{j\in\mathcal S_t,\,j\ne i}p_{t,j}\right)/p_{t,i}}\\
+&\quad=u^{(1-p_{t,i})/p_{t,i}}
+=u^{1/p_{t,i}-1}.
+\end{align*}
+
+We now integrate over the possible values of $r_{t,i}$. Its conditional
+density on $(0,1)$ is $f_{r_{t,i}\mid\mathbf p_t}(u)=1$, so for
+$0\le x\le1$,
+\begin{align*}
+&\Pp_1(r_{t,i}\le x,\,w_t=i\mid\mathbf p_t)\\
+&\quad=\int_0^x
+  \Pp_1(w_t=i\mid r_{t,i}=u,\mathbf p_t)
+  f_{r_{t,i}\mid\mathbf p_t}(u)\,du\\
+&\quad=\int_0^x u^{1/p_{t,i}-1}\,du\\
+&\quad=\left[p_{t,i}u^{1/p_{t,i}}\right]_{u=0}^{u=x}\\
+&\quad=p_{t,i}x^{1/p_{t,i}}.
+\end{align*}
+This is a joint probability: it requires both $r_{t,i}\le x$ and candidate
+$i$ to be the emitted token.
+
+The event $\{r_{t,w_t}\le x\}$ is the disjoint union
+\[
+  \{r_{t,w_t}\le x\}
+  =\bigcup_{i\in\mathcal S_t}
+  \{r_{t,i}\le x,\,w_t=i\}.
+\]
+Consequently, the law of total probability gives
+\begin{align*}
+\Pp_1(r_{t,w_t}\le x\mid\mathbf p_t)
+&=\sum_{i\in\mathcal S_t}
+  \Pp_1(r_{t,i}\le x,\,w_t=i\mid\mathbf p_t)\\
+&=\sum_{i\in\mathcal S_t}p_{t,i}x^{1/p_{t,i}},
+\end{align*}
+which is Equation~\eqref{eq:altcdf-main}.
+
+As a check, setting $x=1$ in the fixed-$i$ joint-probability formula above gives
+\[
+  \Pp_1(w_t=i\mid\mathbf p_t)=p_{t,i}.
+\]
+Dividing the joint probability by this selection probability gives
+\[
+\begin{aligned}
+\Pp_1(r_{t,i}\le x\mid w_t=i,\mathbf p_t)
+&=\frac{\Pp_1(r_{t,i}\le x,\,w_t=i\mid\mathbf p_t)}
+        {\Pp_1(w_t=i\mid\mathbf p_t)}\\
+&=\frac{p_{t,i}x^{1/p_{t,i}}}{p_{t,i}}\\
+&=x^{1/p_{t,i}},
+\end{aligned}
+\]
+the CDF of $\iperpaper{beta_conditional_cdf}{\Beta(1/p_{t,i},1)}$.
+\end{leveltwo}
+
+For every $i\in\mathcal S_t$, we have $0<p_{t,i}\le1$ and therefore
+$1/p_{t,i}\ge1$. Since $0<x<1$, raising $x$ to a larger exponent can only
+decrease it, so $x^{1/p_{t,i}}\le x$. Hence
+\[
+\sum_{i\in\mathcal S_t} p_{t,i}x^{1/p_{t,i}}
+\le x\sum_{i\in\mathcal S_t} p_{t,i}=x.
+\]
+so the alternative CDF lies below the Uniform$(0,1)$ CDF. Equivalently, $r_{t,w_t}$ is stochastically larger under $H_1$ \cite{li2025}.
+
+A compact expectation table is therefore:
+\begin{center}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.25\textwidth} X X}
+\toprule
+Text source & Distribution of $r_{t,w_t}$ in the ideal model & Basic expectation \\
+\midrule
+Human / unwatermarked LLM & $\U(0,1)$ & $\E[r_{t,w_t}]=0.5$ \\
+Keyed Gumbel-max LLM & CDF $\sum_i p_{t,i}x^{1/p_{t,i}}$ & $\E[r_{t,w_t}]>0.5$ unless the next-token distribution is singular \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+
+% =====================================================================
+\section{Aaronson's detection score and its null distribution}
+
+Aaronson proposed the per-token score
+\begin{equation}
+  \iperpaper{aaronson_token_score}{Z_t=-\log(1-r_{t,w_t})}
+  \label{eq:Zscore}
+\end{equation}
+and the aggregate
+\begin{equation}
+  \iperpaper{aggregate_score}{S_T=\sum_{t=1}^{T}-\log(1-r_{t,w_t})}.
+  \label{eq:St}
+\end{equation}
+Values of $r_{t,w_t}$ close to 1 produce large positive contributions.
+
+Under $H_0$, Eq.~\eqref{eq:nullr} implies
+\[
+  Z_t\sim\Exp(\text{rate}=1),
+  \qquad
+  \E_0[Z_t]=1,
+  \qquad
+  \Var_0(Z_t)=1.
+\]
+If the scored pseudorandom values behave independently across the $T$ effective positions, then
+\begin{equation}
+  \iperpaper{gamma_null}{S_T\sim\Gam(\text{shape}=T,\text{rate}=1)},
+  \label{eq:gamma-main}
+\end{equation}
+so
+\[
+  \E_0[S_T]=T,\qquad \Var_0(S_T)=T.
+\]
+The detector rejects $H_0$ when $S_T$ is unusually large. For an observed score $S_T^{\rm obs}$, the \iperpaper{one_sided_p_value}{one-sided p-value} is
+\[
+  \Pp_{H_0}(S_T\ge S_T^{\rm obs}).
+\]
+For example, with $T=100$ independent effective positions, the $99$th percentile (equivalently, the $1\%$ upper-tail threshold) of $\iperpaper{gamma_percentile_example}{\Gam(100,1)}$ is approximately $124.72$.
+Thus a score above $124.72$ has a null p-value below $0.01$ in the ideal fixed-horizon model.
+
+
+\begin{leveltwo}{What value should we expect under watermarking?}
+There is no universal watermarked mean because it depends on the next-token probabilities. A simple case makes the effect transparent. If exactly $m$ tokens are equally likely at a position, so that $p_{t,i}=1/m$ on those $m$ tokens, then
+\[
+  \Pp_1(r_{t,w_t}\le x)=x^m,
+  \qquad
+  \iperpaper{beta_equal_likelihood}{r_{t,w_t}\sim\Beta(m,1)}.
+\]
+For Aaronson's score,
+\[
+  \E_1[-\log(1-r_{t,w_t})]=H_m
+  =1+\frac12+\cdots+\frac1m,
+\]
+where $H_m$ is the $m$th harmonic number. Hence the expected per-token score is
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+Equal plausible choices $m$ & Null mean $\E_0[Z_t]$ & Watermarked mean $\E_1[Z_t]$ \\
+\midrule
+1 & 1 & 1.000 \\
+2 & 1 & 1.500 \\
+4 & 1 & 2.083 \\
+10 & 1 & 2.929 \\
+\bottomrule
+\end{tabular}
+\end{center}
+This is why sampling uncertainty matters: more plausible alternatives give the watermark more room to couple token choice to the secret key.
+
+\end{leveltwo}
+
+
+\begin{leveltwo}{What the verifier does not need to reconstruct}
+For this chosen-coordinate detector, the verifier does not need the original prompt, hidden system prompt, temperature, or the model's exact logits in order to calibrate the null distribution. Those quantities influence the alternative distribution and therefore the detection power, but under the ideal null the selected value $r_{t,w_t}$ is Uniform$(0,1)$ without knowing $\mathbf p_t$. This model-free null calibration is why the selected value is called a \iperpaper{pivot}{\textbf{pivot}} \cite{li2025}.
+
+\end{leveltwo}
+
+% =====================================================================
+\section{Later findings and practical qualifications}
+
+The clean theory above is the right starting point, but practical implementations
+raise additional issues. Under ordinary stochastic sampling, repeated generations
+from the same prompt can produce different responses because each run uses fresh
+randomness. By contrast, the Gumbel-max scheme described here derives its
+pseudorandom values deterministically from the key and context. Consequently, if
+the model, prompt, decoding configuration, tokenization, and key are all fixed,
+repeated runs produce the same output. This loss of generation diversity can be
+mitigated by variants such as GumbelSoft \cite{fu2024}.
+
+Other practical challenges include maintaining detection power after human edits
+\cite{liedits2025} and handling repeated or colliding inputs to the keyed
+pseudorandom mechanism, which can introduce dependence absent from the idealized
+analysis \cite{khachaturov2025,cai2025collision}. Finally, conventional
+fixed-horizon tests assume that the text length is chosen in advance. Repeatedly
+checking the test while tokens arrive and stopping as soon as the evidence appears
+significant can increase the false-positive rate. Recent work develops
+anytime-valid and online detection procedures that remain calibrated under such
+data-dependent stopping \cite{huang2026,luo2026}. These developments are beyond
+the scope of this tutorial.
+
+
+% =====================================================================
+\section{End-to-end summary}
+
+The Aaronson--Kirchner idea can be remembered as six linked statements:
+\begin{enumerate}
+\item The LLM supplies next-token probabilities $p_{t,i}$.
+\item The secret key supplies pseudorandom values $r_{t,i}$.
+\item The generator chooses
+\[
+  w_t=\argmax_i r_{t,i}^{1/p_{t,i}}.
+\]
+\item The exponential-race identity guarantees
+\[
+  \Pp(w_t=i)=p_{t,i},
+\]
+so the marginal next-token distribution is preserved.
+\item A verifier with the key regenerates the selected value $r_{t,w_t}$ at every scorable position. Under key-independent text, $r_{t,w_t}\sim\U(0,1)$; under watermarking it is biased toward 1.
+\item Aaronson's original detector sums $-\log(1-r_{t,w_t})$; later statistical work treats $r_{t,w_t}$ as a pivot and studies better ways to aggregate the evidence.
+\end{enumerate}
+
+The most important conceptual distinction is
+\[
+\text{the detector does not detect secret numbers; it detects secret correlation.}
+\]
+The pseudorandom values are regenerated from the key. The statistical question is whether the observed token choices align with those values much more strongly than key-independent text should.
+
+\newpage
+\begin{thebibliography}{99}
+
+\bibitem{aaronson2022}
+Scott Aaronson and Hendrik Kirchner.
+\newblock \emph{Watermarking GPT Outputs}.
+\newblock Technical slide deck, December 13, 2022.
+\newblock \url{https://www.scottaaronson.com/talks/watermark.ppt}
+
+\bibitem{li2025}
+Xiang Li, Feng Ruan, Huiyuan Wang, Qi Long, and Weijie J. Su.
+\newblock \emph{A Statistical Framework of Watermarks for Large Language Models: Pivot, Detection Efficiency and Optimal Rules}.
+\newblock \emph{The Annals of Statistics}, 53(1):322--351, 2025.
+\newblock DOI: \href{https://doi.org/10.1214/24-AOS2468}{10.1214/24-AOS2468}; arXiv:2404.01245 (v4, August 2025).
+
+\bibitem{fu2024}
+Jiayi Fu, Xuandong Zhao, Ruihan Yang, Yuansen Zhang, Jiangjie Chen, and Yanghua Xiao.
+\newblock \emph{GumbelSoft: Diversified Language Model Watermarking via the GumbelMax-trick}.
+\newblock Proceedings of ACL 2024, pages 5791--5808.
+\newblock \url{https://aclanthology.org/2024.acl-long.315/}
+
+\bibitem{liedits2025}
+Xiang Li, Feng Ruan, Huiyuan Wang, Qi Long, and Weijie J. Su.
+\newblock \emph{Robust Detection of Watermarks for Large Language Models Under Human Edits}.
+\newblock \emph{Journal of the Royal Statistical Society Series B: Statistical Methodology}, 88(2):491--515, April 2026.
+\newblock DOI: \href{https://doi.org/10.1093/jrsssb/qkaf056}{10.1093/jrsssb/qkaf056}; arXiv:2411.13868 (v3, August 2025).
+
+\bibitem{khachaturov2025}
+David Khachaturov, Robert Mullins, Ilia Shumailov, and Sumanth Dathathri.
+\newblock \emph{Watermarking Needs Input Repetition Masking}.
+\newblock arXiv:2504.12229, 2025.
+\newblock \url{https://arxiv.org/abs/2504.12229}
+
+\bibitem{cai2025collision}
+T. Tony Cai, Xiang Li, Qi Long, Weijie J. Su, and Garrett G. Wen.
+\newblock \emph{Optimal Detection for Language Watermarks with Pseudorandom Collision}.
+\newblock arXiv:2510.22007, 2025.
+\newblock \url{https://arxiv.org/abs/2510.22007}
+
+\bibitem{huang2026}
+Baihe Huang, Eric Xu, Kannan Ramchandran, Jiantao Jiao, and Michael I. Jordan.
+\newblock \emph{Towards Anytime-Valid Statistical Watermarking}.
+\newblock arXiv:2602.17608, 2026.
+\newblock \url{https://arxiv.org/abs/2602.17608}
+
+\bibitem{luo2026}
+Lu Luo, Dandan Mo, Chengdong Xu, Ting Li, Jinhan Xie, Huiqiong Li, and Niansheng Tang.
+\newblock \emph{Efficient Online LLM Watermark Detection via Rao--Blackwellized E-Processes}.
+\newblock arXiv:2607.21958, 2026.
+\newblock \url{https://arxiv.org/abs/2607.21958}
+
+\end{thebibliography}
+
+\end{document}

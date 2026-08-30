@@ -1,0 +1,74 @@
+{
+  "title": "A tiny energy-based model example",
+  "annotations": [
+    {
+      "id": "ebm",
+      "kind": "concept",
+      "label": "energy-based model",
+      "short": "A model that assigns lower energy to configurations it considers more probable.",
+      "details": "Instead of parameterizing probability directly, the model defines an energy $E_\\theta(x)$ and turns negative energy into an unnormalized probability through an exponential.",
+      "background": [
+        "Gibbs"
+      ]
+    },
+    {
+      "id": "theta",
+      "kind": "symbol",
+      "label": "$\\theta$",
+      "short": "The trainable parameters $\\theta$ of the probability model $p_\\theta$.",
+      "details": "Changing $\\theta$ changes the energy function, and therefore changes the probability assigned to $x$. The same annotation ID is reused for multiple occurrences because the parameter has the same role.",
+      "background": []
+    },
+    {
+      "id": "energy",
+      "kind": "notation",
+      "label": "$E_\\theta(x)$",
+      "short": "The energy $E_\\theta(x)$ assigned to $x$ by parameters $\\theta$; lower energy means larger unnormalized probability.",
+      "details": "The exponential $e^{-E_\\theta(x)}$ converts energy into a positive score. This score still needs normalization by $Z_\\theta$.",
+      "background": []
+    },
+    {
+      "id": "partition",
+      "kind": "symbol",
+      "label": "$Z_\\theta$",
+      "short": "The partition function $Z_\\theta$: the normalization constant for $p_\\theta(x)$.",
+      "details": "$Z_\\theta$ sums or integrates $e^{-E_\\theta(x)}$ over all possible $x$ so the resulting probabilities sum or integrate to one.",
+      "background": [
+        "Gibbs"
+      ]
+    },
+    {
+      "id": "partition_prose",
+      "kind": "concept",
+      "label": "partition function",
+      "short": "The quantity that turns the model's unnormalized scores into a valid probability distribution.",
+      "details": "Without dividing by the partition function, $e^{-E_\\theta(x)}$ is only proportional to a probability density.",
+      "background": [
+        "Gibbs"
+      ]
+    },
+    {
+      "id": "gradient",
+      "kind": "operator",
+      "label": "$\\nabla_\\theta \\log p_\\theta(x)$",
+      "short": "The gradient $\\nabla_\\theta \\log p_\\theta(x)$ of log probability with respect to the model parameters $\\theta$.",
+      "details": "It points in the direction of greatest local increase of $\\log p_\\theta(x)$ and is a basic ingredient of gradient-based maximum-likelihood training.",
+      "background": []
+    },
+    {
+      "id": "energy_landscape",
+      "kind": "concept",
+      "label": "energy landscape",
+      "short": "A visualization of how the model's energy varies over possible inputs $x$.",
+      "details": "Low regions of the curve correspond to configurations with larger unnormalized probability $e^{-E_\\theta(x)}$.",
+      "background": []
+    }
+  ],
+  "background": {
+    "Gibbs": {
+      "short": "A Gibbs/Boltzmann-style distribution assigns probability proportional to ^{-E(x)}$ for an energy function $.",
+      "details": "Lower-energy configurations receive exponentially larger probability. The proportionality constant is the partition function.",
+      "link": "https://en.wikipedia.org/wiki/Boltzmann_distribution"
+    }
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "version": 4,
+  "citations": [
+    {
+      "citation_key": "aaronson2022",
+      "index": 1,
+      "paper_title": "",
+      "paper_title_source": "",
+      "paper_title_verified": false,
+      "authors": [],
+      "links": [
+        "https://www.scottaaronson.com/talks/watermark.ppt"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "li2025",
+      "index": 2,
+      "paper_title": "A Statistical Framework of Watermarks for Large Language Models: Pivot, Detection Efficiency and Optimal Rules",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Xiang Li",
+        "Feng Ruan",
+        "Huiyuan Wang",
+        "Qi Long",
+        "Weijie J. Su"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2404.01245",
+        "https://doi.org/10.1214/24-AOS2468"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "fu2024",
+      "index": 3,
+      "paper_title": "GumbelSoft: Diversified Language Model Watermarking via the GumbelMax-trick",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Jiayi Fu",
+        "Xuandong Zhao",
+        "Ruihan Yang",
+        "Yuansen Zhang",
+        "Jiangjie Chen",
+        "Yanghua Xiao"
+      ],
+      "links": [
+        "https://aclanthology.org/2024.acl-long.315.pdf",
+        "https://aclanthology.org/2024.acl-long.315/"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "liedits2025",
+      "index": 4,
+      "paper_title": "Robust Detection of Watermarks for Large Language Models Under Human Edits",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Xiang Li",
+        "Feng Ruan",
+        "Huiyuan Wang",
+        "Qi Long",
+        "Weijie J. Su"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2411.13868",
+        "https://doi.org/10.1093/jrsssb/qkaf056"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "khachaturov2025",
+      "index": 5,
+      "paper_title": "Watermarking Needs Input Repetition Masking",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "David Khachaturov",
+        "Robert Mullins",
+        "Ilia Shumailov",
+        "Sumanth Dathathri"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2504.12229",
+        "https://arxiv.org/abs/2504.12229"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "cai2025collision",
+      "index": 6,
+      "paper_title": "Optimal Detection for Language Watermarks with Pseudorandom Collision",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "T. Tony Cai",
+        "Xiang Li",
+        "Qi Long",
+        "Weijie J. Su",
+        "Garrett G. Wen"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2510.22007",
+        "https://arxiv.org/abs/2510.22007"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "huang2026",
+      "index": 7,
+      "paper_title": "Towards Anytime-Valid Statistical Watermarking",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Baihe Huang",
+        "Eric Xu",
+        "Kannan Ramchandran",
+        "Jiantao Jiao",
+        "Michael I. Jordan"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2602.17608",
+        "https://arxiv.org/abs/2602.17608"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "luo2026",
+      "index": 8,
+      "paper_title": "Efficient Online LLM Watermark Detection via Rao-Blackwellized E-Processes",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Lu Luo",
+        "Dandan Mo",
+        "Chengdong Xu",
+        "Ting Li",
+        "Jinhan Xie",
+        "Huiqiong Li",
+        "Niansheng Tang"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2607.21958",
+        "https://arxiv.org/abs/2607.21958"
+      ],
+      "lookup_complete": true
+    }
+  ]
+}

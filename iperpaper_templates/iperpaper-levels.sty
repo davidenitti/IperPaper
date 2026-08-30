@@ -1,0 +1,44 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{iperpaper-levels}[2026/08/17 Reusable IperPaper reading levels]
+
+\RequirePackage{environ}
+\RequirePackage{xcolor}
+\RequirePackage{hyperref}
+
+% Level 2 is included by default so an IperPaper HTML build contains every
+% collapsible range. Set \IperPaperShowLevelTwofalse before \begin{document}
+% only when producing a separate Level-1-only PDF.
+\newif\ifIperPaperShowLevelTwo
+\IperPaperShowLevelTwotrue
+
+% Papers may override these after loading the package.
+\providecolor{iperpaperlink}{HTML}{0000AA}
+\newcommand{\IperPaperLevelTwoColor}{iperpaperlink}
+\newcommand{\IperPaperLevelTwoAfterSkip}{0.6\baselineskip}
+
+\makeatletter
+\newcommand{\iperpaperafterleveltwo}{%
+  \par\addvspace{\IperPaperLevelTwoAfterSkip}%
+  \@afterindentfalse\@afterheading
+}
+
+\newcounter{iperpaperleveltwo}
+\NewEnviron{leveltwo}[1]{%
+  \ifIperPaperShowLevelTwo
+    \stepcounter{iperpaperleveltwo}%
+    \edef\iperpaperleveltwoid{two-\arabic{iperpaperleveltwo}}%
+    \hypertarget{iperpaper-level-start:2:\iperpaperleveltwoid}{}%
+    \ifnum\value{section}=0
+      \subsection*{\texorpdfstring{\protect\hyperlink{iperpaper-level-start:2:\iperpaperleveltwoid}{{\color{\IperPaperLevelTwoColor}#1}}}{#1}}%
+    \else
+      \subsection{\texorpdfstring{\protect\hyperlink{iperpaper-level-start:2:\iperpaperleveltwoid}{{\color{\IperPaperLevelTwoColor}#1}}}{#1}}%
+    \fi
+    \hypertarget{iperpaper-level-content:2:\iperpaperleveltwoid}{}%
+    \BODY\par
+    \hypertarget{iperpaper-level-end:2:\iperpaperleveltwoid}{}%
+    \aftergroup\iperpaperafterleveltwo
+  \fi
+}
+\makeatother
+
+\endinput
