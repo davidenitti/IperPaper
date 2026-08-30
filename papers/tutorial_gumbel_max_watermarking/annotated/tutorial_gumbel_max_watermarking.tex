@@ -162,7 +162,7 @@ The detection problem is therefore a statistical hypothesis test. The hypotheses
 H_0 &: \text{the observed token choices are independent of this secret watermark key},\\
 H_1 &: \text{the text was generated using the keyed Gumbel-max watermark}.
 \end{align*}
-This distinction is important: the detector is not a generic ``human versus LLM'' classifier. Human-written text and output from an unwatermarked LLM ordinarily fall under the same null model when their token choices are independent of the tested keyed pseudorandom field. Lack of access to the key is normally sufficient in the ideal model, but it does not by itself rule out correlations caused by copied or watermarked context. The verifier is testing for a specific secret correlation \cite{li2025}.
+This distinction is important: the detector is not a generic ``human versus LLM'' classifier. Human-written text and output from an unwatermarked LLM ordinarily fall under the same null model when their token choices are independent of the secret watermark randomness. The verifier is testing for a specific secret correlation \cite{li2025}.
 
 The tutorial develops the original Gumbel-max generation and detection mechanism from first principles, including the exponential-race argument, how the secret pseudorandom values are regenerated from a text, and the exact null distribution of the original score under the ideal independent-effective-position model. It concludes with later results on edits, repeated pseudorandom inputs, diversity, and sequential detection \cite{li2025,fu2024,liedits2025,cai2025collision,huang2026,luo2026}.
 
@@ -542,7 +542,7 @@ Thus
   \qquad
   \Var_0(r_{t,w_t})=\frac1{12}.
 \]
-This applies both to human text and to an ordinary unwatermarked LLM, provided the observed token choice is independent of the tested keyed pseudorandom field. The test is therefore a \emph{watermark-presence test}, not a generic AI-writing test \cite{li2025}.
+This applies both to human text and to an ordinary unwatermarked LLM, provided the observed token choice is independent of the secret watermark randomness. The test is therefore a \emph{watermark-presence test}, not a generic AI-writing test \cite{li2025}.
 
 Under watermarking, the selected value $r_{t,w_t}$ is biased toward 1. Conditional on the next-token distribution $\mathbf p_t$,
 \begin{equation}
@@ -696,7 +696,6 @@ The detector rejects $H_0$ when $S_T$ is unusually large. For an observed score 
 \]
 For example, with $T=100$ independent effective positions, the $99$th percentile (equivalently, the $1\%$ upper-tail threshold) of $\iperpaper{gamma_percentile_example}{\Gam(100,1)}$ is approximately $124.72$.
 Thus a score above $124.72$ has a null p-value below $0.01$ in the ideal fixed-horizon model.
-Li et al. further show that Aaronson's score, while valid, is not generally optimal under their detection-efficiency criterion, and derive more efficient detection rules for specified classes of next-token distributions \cite{li2025}.
 
 \begin{leveltwo}{What value should we expect under watermarking?}
 There is no universal watermarked mean because it depends on the next-token probabilities. A simple case makes the effect transparent. If exactly $m$ tokens are equally likely at a position, so that $p_{t,i}=1/m$ on those $m$ tokens, then
@@ -741,16 +740,14 @@ raise additional issues. Under ordinary stochastic sampling, repeated generation
 from the same prompt can produce different responses because each run uses fresh
 randomness. By contrast, the Gumbel-max scheme described here derives its
 pseudorandom values deterministically from the key and context. Consequently, if
-the model's inference/logits are deterministic and the model, prompt, decoding configuration, tokenization, and key are all fixed,
+the model, prompt, decoding configuration, tokenization, and key are all fixed,
 repeated runs produce the same output. This loss of generation diversity can be
 mitigated by variants such as GumbelSoft \cite{fu2024}.
 
 Other practical challenges include maintaining detection power after human edits
-\cite{liedits2025}. Repeated local contexts can cause reuse or collisions in the keyed
-pseudorandom mechanism, introducing dependence absent from the idealized analysis
-\cite{cai2025collision}. Separately, exposure to watermarked input can induce watermark
-mimicry in subsequent human or unwatermarked-model responses, motivating input-repetition
-masking and longer seeding contexts \cite{khachaturov2025}. Finally, conventional
+\cite{liedits2025} and handling repeated or colliding inputs to the keyed
+pseudorandom mechanism, which can introduce dependence absent from the idealized
+analysis \cite{khachaturov2025,cai2025collision}. Finally, conventional
 fixed-horizon tests assume that the text length is chosen in advance. Repeatedly
 checking the test while tokens arrive and stopping as soon as the evidence appears
 significant can increase the false-positive rate. Recent work develops
