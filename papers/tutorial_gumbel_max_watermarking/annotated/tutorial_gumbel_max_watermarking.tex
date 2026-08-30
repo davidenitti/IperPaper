@@ -201,10 +201,10 @@ The ideal analysis models the vector $(r_{t,1},\ldots,r_{t,V})$ as independent $
 \[
   r_{t,i}=\iperpaper{keyed_prf}{\PRF_{\Key}(w_{t-m},\ldots,w_{t-1},i)}.
 \]
-Here \(\PRF\) means \emph{pseudorandom function}. For a fixed key it is deterministic, but to an observer without the key its outputs are intended to be computationally indistinguishable from random values. This is the ideal cryptographic abstraction. The PCG-64 construction described below is instead a reproducible experimental pseudorandom implementation, not a cryptographic PRF. Treating the $r_{t,i}$ values as independent $\U(0,1)$ variables is the ideal statistical model, not a claim that the implementation produces literal randomness.
+Here \(\PRF\) means \emph{pseudorandom function}. For a fixed key it is deterministic, but to an observer without the key its outputs are intended to be computationally indistinguishable from random values. Treating the $r_{t,i}$ values as independent $\U(0,1)$ variables is the ideal statistical model, not a claim that the implementation produces literal randomness.
 The generator and verifier must use exactly the same context rule and token encoding \cite{li2025}.
 
-Appendix D.1 of Li et al. specifies the following experimental construction. It concatenates
+One possible implementation, used in the simulations of Li et al., concatenates
 the preceding $m$ tokens with the key and applies a hash function $A$ to obtain a
 seed. That seed initializes the PCG-64 pseudorandom generator:
 \[
