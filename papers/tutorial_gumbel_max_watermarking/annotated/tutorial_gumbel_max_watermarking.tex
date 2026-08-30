@@ -520,7 +520,7 @@ Finite-context seeding has one useful synchronization property: after a local in
 \end{leveltwo}
 
 \begin{leveltwo}{Why detection needs only the chosen coordinate}
-Generation must compare candidates, so it conceptually needs the whole pseudorandom vector. Detection already observes the chosen index $w_t$. The original statistic depends only on $r_{t,w_t}$, so unused coordinates carry no additional information for that test. With a random-access keyed function this can reduce computation; with a stream-based seeded RNG the implementation may still generate or advance through many coordinates.
+Generation must compare candidates, so it conceptually needs the whole pseudorandom vector. Detection already observes the chosen index $w_t$. The original statistic depends only on $r_{t,w_t}$, so unused coordinates carry no additional information for that test.
 \end{leveltwo}
 
 % =====================================================================
