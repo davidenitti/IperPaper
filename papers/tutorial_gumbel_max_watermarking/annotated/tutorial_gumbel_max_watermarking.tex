@@ -164,7 +164,7 @@ H_1 &: \text{the text was generated using the keyed Gumbel-max watermark}.
 \end{align*}
 This distinction is important: the detector is not a generic ``human versus LLM'' classifier. Human-written text and output from an unwatermarked LLM ordinarily fall under the same null model when their token choices are independent of the secret pseudorandom values. The verifier is testing for a specific secret correlation \cite{li2025}.
 
-The tutorial develops the original Gumbel-max generation and detection mechanism from first principles, including the exponential-race argument, how the secret pseudorandom values are regenerated from a text, and the exact null distribution of the original score assuming the scored positions are independent. It concludes with later results on edits, repeated pseudorandom inputs, diversity, and sequential detection \cite{li2025,fu2024,liedits2025,cai2025collision,huang2026,luo2026}.
+The tutorial develops the original Gumbel-max generation and detection mechanism from first principles, including the exponential-race argument, how the secret pseudorandom values are regenerated from a text, and the exact null distribution of the original score assuming the pseudorandom values used at the different token positions are independent. It concludes with later results on edits, repeated pseudorandom inputs, diversity, and sequential detection \cite{li2025,fu2024,liedits2025,cai2025collision,huang2026,luo2026}.
 
 % =====================================================================
 \section{Notation and setup}
