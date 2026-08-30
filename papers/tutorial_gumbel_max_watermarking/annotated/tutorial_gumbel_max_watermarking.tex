@@ -162,7 +162,7 @@ The detection problem is therefore a statistical hypothesis test. The hypotheses
 H_0 &: \text{the observed token choices are independent of this secret watermark key},\\
 H_1 &: \text{the text was generated using the keyed Gumbel-max watermark}.
 \end{align*}
-This distinction is important: the detector is not a generic ``human versus LLM'' classifier. Human-written text and output from an unwatermarked LLM ordinarily fall under the same null model when their token choices are independent of the secret watermark randomness. The verifier is testing for a specific secret correlation \cite{li2025}.
+This distinction is important: the detector is not a generic ``human versus LLM'' classifier. Human-written text and output from an unwatermarked LLM ordinarily fall under the same null model when their token choices are independent of the secret pseudorandom values. The verifier is testing for a specific secret correlation \cite{li2025}.
 
 The tutorial develops the original Gumbel-max generation and detection mechanism from first principles, including the exponential-race argument, how the secret pseudorandom values are regenerated from a text, and the exact null distribution of the original score under the ideal independent-effective-position model. It concludes with later results on edits, repeated pseudorandom inputs, diversity, and sequential detection \cite{li2025,fu2024,liedits2025,cai2025collision,huang2026,luo2026}.
 
@@ -528,7 +528,7 @@ Generation must compare candidates, so it conceptually needs the whole pseudoran
 
 The correct statistical question is not ``human or LLM?'' but
 \begin{align*}
-\iperpaper{null_hypothesis}{H_0} &: \text{the observed text is independent of this secret watermark randomness},\\
+\iperpaper{null_hypothesis}{H_0} &: \text{the observed text is independent of the secret pseudorandom values},\\
 \iperpaper{watermarked_hypothesis}{H_1} &: \text{the text was generated with the keyed Gumbel-max watermark}.
 \end{align*}
 Under the ideal null model,
@@ -542,7 +542,7 @@ Thus
   \qquad
   \Var_0(r_{t,w_t})=\frac1{12}.
 \]
-This applies both to human text and to an ordinary unwatermarked LLM, provided the observed token choice is independent of the secret watermark randomness. The test is therefore a \emph{watermark-presence test}, not a generic AI-writing test \cite{li2025}.
+This applies both to human text and to an ordinary unwatermarked LLM, provided the observed token choice is independent of the secret pseudorandom values. The test is therefore a \emph{watermark-presence test}, not a generic AI-writing test \cite{li2025}.
 
 Under watermarking, the selected value $r_{t,w_t}$ is biased toward 1. Conditional on the next-token distribution $\mathbf p_t$,
 \begin{equation}
