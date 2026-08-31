@@ -1,0 +1,27 @@
+\documentclass{article}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\definecolor{iperpaperlink}{HTML}{0000AA}
+\DeclareRobustCommand{\iperpaper}[2]{%
+  \begingroup
+  \hypersetup{pdfborder=0 0 0}%
+  \href{iperpaper:#1}{{\color{iperpaperlink}#2}}%
+  \endgroup
+}
+\pdfstringdefDisableCommands{%
+  \def\iperpaper#1#2{#2}%
+}
+\title{A tiny energy-based model example}
+\author{IperPaper test fixture}
+\begin{document}
+\maketitle
+
+\input{sections/model}
+
+\begin{figure}[h]
+\centering
+\fbox{\rule{0pt}{28mm}\rule{0.72\linewidth}{0pt}}
+\caption{A schematic \iperpaper{energy_landscape}{energy landscape}: lower energy corresponds to larger unnormalized probability.}
+\end{figure}
+
+\end{document}

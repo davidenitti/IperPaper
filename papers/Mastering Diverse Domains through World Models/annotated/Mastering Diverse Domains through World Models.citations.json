@@ -1,0 +1,1309 @@
+{
+  "version": 4,
+  "citations": [
+    {
+      "citation_key": "silver2016alphago",
+      "index": 1,
+      "paper_title": "Mastering the game of Go with deep neural networks and tree search",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "David Silver",
+        "Aja Huang",
+        "Chris J. Maddison",
+        "Arthur Guez",
+        "Laurent Sifre",
+        "George van den Driessche",
+        "Julian Schrittwieser",
+        "Ioannis Antonoglou",
+        "Veda Panneershelvam",
+        "Marc Lanctot",
+        "Sander Dieleman",
+        "Dominik Grewe",
+        "John Nham",
+        "Nal Kalchbrenner",
+        "Ilya Sutskever",
+        "Timothy Lillicrap",
+        "Madeleine Leach",
+        "Koray Kavukcuoglu",
+        "Thore Graepel",
+        "Demis Hassabis"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "openai2018dota",
+      "index": 2,
+      "paper_title": "OpenAI Five",
+      "paper_title_source": "bibtex",
+      "paper_title_verified": true,
+      "authors": [
+        "OpenAI"
+      ],
+      "links": [
+        "https://blog.openai.com/openai-five/"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "ouyang2022rlhf",
+      "index": 3,
+      "paper_title": "Training language models to follow instructions with human feedback",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Long Ouyang",
+        "Jeff Wu",
+        "Xu Jiang",
+        "Diogo Almeida",
+        "Carroll L. Wainwright",
+        "Pamela Mishkin",
+        "Chong Zhang",
+        "Sandhini Agarwal",
+        "Katarina Slama",
+        "Alex Ray",
+        "John Schulman",
+        "Jacob Hilton",
+        "Fraser Kelton",
+        "Luke E. Miller",
+        "Maddie Simens",
+        "Amanda Askell",
+        "Peter Welinder",
+        "Paul Christiano",
+        "Jan Leike",
+        "Ryan Lowe"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2203.02155"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "le2022coderl",
+      "index": 4,
+      "paper_title": "CodeRL: Mastering Code Generation through Pretrained Models and Deep Reinforcement Learning",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "H Le",
+        "Yue Wang",
+        "Akhilesh Deepak Gotmare",
+        "Silvio Savarese",
+        "Steven C. H. Hoi"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2207.01780"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "schulman2017ppo",
+      "index": 5,
+      "paper_title": "Proximal Policy Optimization Algorithms",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "John Schulman",
+        "Filip Wolski",
+        "Prafulla Dhariwal",
+        "Alec Radford",
+        "Oleg Klimov"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1707.06347"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "lillicrap2015ddpg",
+      "index": 6,
+      "paper_title": "Continuous control with deep reinforcement learning",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Timothy P. Lillicrap",
+        "Jonathan J. Hunt",
+        "Alexander Pritzel",
+        "Nicolas Heess",
+        "Tom Erez",
+        "Yuval Tassa",
+        "David Silver",
+        "Daan Wierstra"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1509.02971"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "mnih2015dqn",
+      "index": 7,
+      "paper_title": "Human-level control through deep reinforcement learning",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Volodymyr Mnih",
+        "Koray Kavukcuoglu",
+        "David Silver",
+        "Andrei A. Rusu",
+        "Joel Veness",
+        "Marc G. Bellemare",
+        "Alex Graves",
+        "Martin Riedmiller",
+        "Andreas Fidjeland",
+        "Georg Ostrovski",
+        "Stig Petersen",
+        "Charles Beattie",
+        "Amir Sadik",
+        "Ioannis Antonoglou",
+        "Helen King",
+        "Dharshan Kumaran",
+        "Daan Wierstra",
+        "Shane Legg",
+        "Demis Hassabis"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "schrittwieser2019muzero",
+      "index": 8,
+      "paper_title": "Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Julian Schrittwieser",
+        "Ioannis Antonoglou",
+        "Thomas Hubert",
+        "Karen Simonyan",
+        "Laurent Sifre",
+        "Simon Schmitt",
+        "Arthur Guez",
+        "Edward Lockhart",
+        "Demis Hassabis",
+        "Thore Graepel",
+        "Timothy Lillicrap",
+        "David Silver"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1911.08265"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "jaderberg2016unreal",
+      "index": 9,
+      "paper_title": "Reinforcement Learning with Unsupervised Auxiliary Tasks",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Max Jaderberg",
+        "Volodymyr Mnih",
+        "Wojciech Marian Czarnecki",
+        "Tom Schaul",
+        "Joel Z Leibo",
+        "David Silver",
+        "Koray Kavukcuoglu"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1611.05397"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "anand2019ataristaterep",
+      "index": 10,
+      "paper_title": "Unsupervised State Representation Learning in Atari",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Ankesh Anand",
+        "Evan Racah",
+        "Sherjil Ozair",
+        "Yoshua Bengio",
+        "Marc-Alexandre Côté",
+        "R Devon Hjelm"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1906.08226"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "driess2022nerfrl",
+      "index": 11,
+      "paper_title": "Reinforcement Learning with Neural Radiance Fields",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Danny Driess",
+        "Ingmar Schubert",
+        "Pete Florence",
+        "Yunzhu Li",
+        "Marc Toussaint"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2206.01634"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "silver2017alphago",
+      "index": 12,
+      "paper_title": "Mastering the game of Go without human knowledge",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "David Silver",
+        "Julian Schrittwieser",
+        "Karen Simonyan",
+        "Ioannis Antonoglou",
+        "Aja Huang",
+        "Arthur Guez",
+        "Thomas Hubert",
+        "Lucas Baker",
+        "Matthew Lai",
+        "Adrian Bolton",
+        "Yutian Chen",
+        "Timothy Lillicrap",
+        "Fan Hui",
+        "Laurent Sifre",
+        "George van den Driessche",
+        "Thore Graepel",
+        "Demis Hassabis"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "andrychowicz2020whatmatters",
+      "index": 13,
+      "paper_title": "What Matters In On-Policy Reinforcement Learning? A Large-Scale Empirical Study",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Marcin Andrychowicz",
+        "Anton Raichuk",
+        "Piotr Stańczyk",
+        "Manu Orsini",
+        "Sertan Girgin",
+        "Raphael Marinier",
+        "Léonard Hussenot",
+        "Matthieu Geist",
+        "Olivier Pietquin",
+        "Marcin Michalski",
+        "Sylvain Gelly",
+        "Olivier Bachem"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2006.05990"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "sutton1991dyna",
+      "index": 14,
+      "paper_title": "Dyna, an integrated architecture for learning, planning, and reacting",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Richard S. Sutton"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "finn2017visualforesight",
+      "index": 15,
+      "paper_title": "Deep Visual Foresight for Planning Robot Motion",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Chelsea Finn",
+        "Sergey Levine"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1610.00696"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "ha2018worldmodels",
+      "index": 16,
+      "paper_title": "World Models",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "David Ha",
+        "Jürgen Schmidhuber"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1803.10122"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "kaiser2019simple",
+      "index": 17,
+      "paper_title": "Model-Based Reinforcement Learning for Atari",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Lukasz Kaiser",
+        "Mohammad Babaeizadeh",
+        "Piotr Milos",
+        "Blazej Osinski",
+        "Roy H Campbell",
+        "Konrad Czechowski",
+        "Dumitru Erhan",
+        "Chelsea Finn",
+        "Piotr Kozakowski",
+        "Sergey Levine",
+        "Afroz Mohiuddin",
+        "Ryan Sepassi",
+        "George Tucker",
+        "Henryk Michalewski"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1903.00374"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "guss2019minerl",
+      "index": 18,
+      "paper_title": "The MineRL Competition on Sample-Efficient Reinforcement Learning Using Human Priors: A Retrospective",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Stephanie Milani",
+        "Nicholay Topin",
+        "Brandon Houghton",
+        "William H. Guss",
+        "Sharada P. Mohanty",
+        "Oriol Vinyals",
+        "Noboru Sean Kuno"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "kanitscheider2021minecraftcurriculum",
+      "index": 19,
+      "paper_title": "Multi-task curriculum learning in a complex, visual, hard-exploration domain: Minecraft",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Ingmar Kanitscheider",
+        "Joost Huizinga",
+        "David Farhi",
+        "William Hebgen Guss",
+        "Brandon Houghton",
+        "Raul Sampedro",
+        "Peter Zhokhov",
+        "Bowen Baker",
+        "Adrien Ecoffet",
+        "Jie Tang",
+        "Oleg Klimov",
+        "Jeff Clune"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2106.14876"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "baker2022vpt",
+      "index": 20,
+      "paper_title": "Video PreTraining (VPT): Learning to Act by Watching Unlabeled Online Videos",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Bowen Baker",
+        "Ilge Akkaya",
+        "Peter Zhokhov",
+        "Joost Huizinga",
+        "Jie Tang",
+        "Adrien Ecoffet",
+        "Brandon Houghton",
+        "Raul Sampedro",
+        "Jeff Clune"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2206.11795"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "hafner2019dreamer",
+      "index": 21,
+      "paper_title": "Dream to Control: Learning Behaviors by Latent Imagination",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Danijar Hafner",
+        "Timothy Lillicrap",
+        "Jimmy Ba",
+        "Mohammad Norouzi"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1912.01603"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "hafner2020dreamerv2",
+      "index": 22,
+      "paper_title": "Mastering Atari with Discrete World Models",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Danijar Hafner",
+        "Timothy Lillicrap",
+        "Mohammad Norouzi",
+        "Jimmy Ba"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2010.02193"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "kingma2013vae",
+      "index": 23,
+      "paper_title": "Auto-Encoding Variational Bayes",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Diederik P Kingma",
+        "Max Welling"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1312.6114"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "hafner2018planet",
+      "index": 24,
+      "paper_title": "Learning Latent Dynamics for Planning from Pixels",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Danijar Hafner",
+        "Timothy Lillicrap",
+        "Ian Fischer",
+        "Ruben Villegas",
+        "David Ha",
+        "Honglak Lee",
+        "James Davidson"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1811.04551"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "bengio2013straight",
+      "index": 25,
+      "paper_title": "Estimating or Propagating Gradients Through Stochastic Neurons for Conditional Computation",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Yoshua Bengio",
+        "Nicholas Léonard",
+        "Aaron Courville"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1308.3432"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "kingma2016freebits",
+      "index": 26,
+      "paper_title": "Improving Variational Inference with Inverse Autoregressive Flow",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Diederik P. Kingma",
+        "Tim Salimans",
+        "Rafał Józefowicz",
+        "Xi Chen",
+        "Ilya Sutskever",
+        "Max Welling"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1606.04934"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "child2020vdvae",
+      "index": 27,
+      "paper_title": "Very Deep VAEs Generalize Autoregressive Models and Can Outperform Them on Images",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Rewon Child"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2011.10650"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "bellemare2017c51",
+      "index": 28,
+      "paper_title": "A Distributional Perspective on Reinforcement Learning",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Marc G. Bellemare",
+        "Will Dabney",
+        "Rémi Munos"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1707.06887"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "sutton2018rlbook",
+      "index": 29,
+      "paper_title": "Reinforcement Learning: An Introduction",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Richard S. Sutton",
+        "Andy Barto"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "williams1991maxentreinforce",
+      "index": 30,
+      "paper_title": "Function Optimization using Connectionist Reinforcement Learning Algorithms",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Ronald J. Williams",
+        "Jing Peng"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "williams1992reinforce",
+      "index": 31,
+      "paper_title": "Simple Statistical Gradient-Following Algorithms for Connectionist Reinforcement Learning",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Ronald J. Williams"
+      ],
+      "links": [
+        "https://link.springer.com/content/pdf/10.1023/A:1022672621406.pdf"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "haarnoja2018sac",
+      "index": 32,
+      "paper_title": "Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Tuomas Haarnoja",
+        "Aurick Zhou",
+        "Pieter Abbeel",
+        "Sergey Levine"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1801.01290"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "abdolmaleki2018mpo",
+      "index": 33,
+      "paper_title": "Maximum a Posteriori Policy Optimisation",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Abbas Abdolmaleki",
+        "Jost Tobias Springenberg",
+        "Yuval Tassa",
+        "Remi Munos",
+        "Nicolas Heess",
+        "Martin Riedmiller"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1806.06920"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "webber2012symlog",
+      "index": 34,
+      "paper_title": "A bi-symmetric log transformation for wide-range data",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "J. Beau W. Webber"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "kapturowski2018r2d2",
+      "index": 35,
+      "paper_title": "Recurrent Experience Replay in Distributed Reinforcement Learning.",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Steven Kapturowski",
+        "Georg Ostrovski",
+        "John Quan",
+        "Rémi Munos",
+        "Will Dabney"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "hessel2019popart",
+      "index": 36,
+      "paper_title": "Multi-Task Deep Reinforcement Learning with PopArt",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Matteo Hessel",
+        "Hubert Soyer",
+        "Lasse Espeholt",
+        "Wojciech Marian Czarnecki",
+        "Simon Schmitt",
+        "Hado van Hasselt"
+      ],
+      "links": [
+        "https://ojs.aaai.org/index.php/AAAI/article/download/4266/4144"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "cobbe2021ppg",
+      "index": 37,
+      "paper_title": "Phasic Policy Gradient",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Karl Cobbe",
+        "Jacob Hilton",
+        "Oleg Klimov",
+        "John Schulman"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2009.04416"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "bellemare2013ale",
+      "index": 38,
+      "paper_title": "The Arcade Learning Environment: An Evaluation Platform for General Agents",
+      "paper_title_source": "crossref",
+      "paper_title_verified": true,
+      "authors": [
+        "M. G. Bellemare",
+        "Y. Naddaf",
+        "J. Veness",
+        "M. Bowling"
+      ],
+      "links": [
+        "https://jair.org/index.php/jair/article/download/10819/25823"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "machado2018revisiting",
+      "index": 39,
+      "paper_title": "Revisiting the Arcade Learning Environment: Evaluation Protocols and Open Problems for General Agents",
+      "paper_title_source": "crossref",
+      "paper_title_verified": true,
+      "authors": [
+        "Marlos C. Machado",
+        "Marc G. Bellemare",
+        "Erik Talvitie",
+        "Joel Veness",
+        "Matthew Hausknecht",
+        "Michael Bowling"
+      ],
+      "links": [
+        "https://jair.org/index.php/jair/article/download/11182/26388"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "hessel2018rainbow",
+      "index": 40,
+      "paper_title": "Rainbow: Combining Improvements in Deep Reinforcement Learning",
+      "paper_title_source": "crossref",
+      "paper_title_verified": true,
+      "authors": [
+        "Matteo Hessel",
+        "Joseph Modayil",
+        "Hado Van Hasselt",
+        "Tom Schaul",
+        "Georg Ostrovski",
+        "Will Dabney",
+        "Dan Horgan",
+        "Bilal Piot",
+        "Mohammad Azar",
+        "David Silver"
+      ],
+      "links": [
+        "https://ojs.aaai.org/index.php/AAAI/article/download/11796/11655"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "dabney2018iqn",
+      "index": 41,
+      "paper_title": "Distributional Reinforcement Learning With Quantile Regression",
+      "paper_title_source": "crossref",
+      "paper_title_verified": true,
+      "authors": [
+        "Will Dabney",
+        "Mark Rowland",
+        "Marc Bellemare",
+        "Rémi Munos"
+      ],
+      "links": [
+        "https://ojs.aaai.org/index.php/AAAI/article/download/11791/11650"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "cobbe2020procgen",
+      "index": 42,
+      "paper_title": "Leveraging Procedural Generation to Benchmark Reinforcement Learning",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Karl Cobbe",
+        "Christopher Hesse",
+        "Jacob Hilton",
+        "John Schulman"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1912.01588"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "beattie2016dmlab",
+      "index": 43,
+      "paper_title": "DeepMind Lab",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Charles Beattie",
+        "Joel Z. Leibo",
+        "Denis Teplyashin",
+        "Tom Ward",
+        "Marcus Wainwright",
+        "Heinrich Küttler",
+        "Andrew Lefrancq",
+        "Simon Green",
+        "Víctor Valdés",
+        "Amir Sadik",
+        "Julian Schrittwieser",
+        "Keith Anderson",
+        "Sarah York",
+        "Max Cant",
+        "Adam Cain",
+        "Adrian Bolton",
+        "Stephen Gaffney",
+        "Helen King",
+        "Demis Hassabis",
+        "Shane Legg",
+        "Stig Petersen"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1612.03801"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "ye2021effzero",
+      "index": 44,
+      "paper_title": "Mastering Atari Games with Limited Data",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Weirui Ye",
+        "Shaohuai Liu",
+        "Thanard Kurutach",
+        "Pieter Abbeel",
+        "Yang Gao"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2111.00210"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "micheli2022iris",
+      "index": 45,
+      "paper_title": "Transformers are Sample-Efficient World Models",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Vincent Micheli",
+        "Eloi Alonso",
+        "François Fleuret"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2209.00588"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "tassa2018dmcontrol",
+      "index": 46,
+      "paper_title": "DeepMind Control Suite",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Yuval Tassa",
+        "Yotam Doron",
+        "Alistair Muldal",
+        "Tom Erez",
+        "Yazhe Li",
+        "Diego de Las Casas",
+        "David Budden",
+        "Abbas Abdolmaleki",
+        "Josh Merel",
+        "Andrew Lefrancq",
+        "Timothy Lillicrap",
+        "Martin Riedmiller"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1801.00690"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "yarats2021drqv2",
+      "index": 47,
+      "paper_title": "Mastering Visual Continuous Control: Improved Data-Augmented Reinforcement Learning",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Denis Yarats",
+        "Rob Fergus",
+        "Alessandro Lazaric",
+        "Lerrel Pinto"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2107.09645"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "osband2019bsuite",
+      "index": 48,
+      "paper_title": "Behaviour Suite for Reinforcement Learning",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Ian Osband",
+        "Yotam Doron",
+        "Matteo Hessel",
+        "John Aslanides",
+        "Eren Sezener",
+        "Andre Saraiva",
+        "Katrina McKinney",
+        "Tor Lattimore",
+        "Csaba Szepesvari",
+        "Satinder Singh",
+        "Benjamin Van Roy",
+        "Richard Sutton",
+        "David Silver",
+        "Hado Van Hasselt"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1908.03568"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "dizon2023bsuiteagents",
+      "index": 49,
+      "paper_title": "Investigating the Practicality of Existing Reinforcement Learning Algorithms: A Performance Comparison",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Olivia P. Dizon-Paradis",
+        "Stephen Wormald",
+        "Daniel E. Capecci",
+        "Avanti Bhandarkar",
+        "Damon L. Woodard"
+      ],
+      "links": [
+        "https://www.techrxiv.org/articles/preprint/Investigating_the_Practicality_of_Existing_Reinforcement_Learning_Algorithms_A_Performance_Comparison/23739099/1/files/41676363.pdf"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "hafner2021crafter",
+      "index": 50,
+      "paper_title": "Benchmarking the Spectrum of Agent Capabilities",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Danijar Hafner"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2109.06780"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "yarats2019sacae",
+      "index": 51,
+      "paper_title": "Improving Sample Efficiency in Model-Free Reinforcement Learning from Images",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Denis Yarats",
+        "Amy Zhang",
+        "Ilya Kostrikov",
+        "Brandon Amos",
+        "Joelle Pineau",
+        "Rob Fergus"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1910.01741"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "reed2022gato",
+      "index": 52,
+      "paper_title": "A Generalist Agent",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Scott Reed",
+        "Konrad Zolna",
+        "Emilio Parisotto",
+        "Sergio Gomez Colmenarejo",
+        "Alexander Novikov",
+        "Gabriel Barth-Maron",
+        "Mai Gimenez",
+        "Yury Sulsky",
+        "Jackie Kay",
+        "Jost Tobias Springenberg",
+        "Tom Eccles",
+        "Jake Bruce",
+        "Ali Razavi",
+        "Ashley Edwards",
+        "Nicolas Heess",
+        "Yutian Chen",
+        "Raia Hadsell",
+        "Oriol Vinyals",
+        "Mahyar Bordbar",
+        "Nando de Freitas"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2205.06175"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "johnson2016malmo",
+      "index": 53,
+      "paper_title": "The Malmo platform for artificial intelligence experimentation",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Matthew Johnson",
+        "Katja Hofmann",
+        "Tim J. Hutton",
+        "David E. Bignell"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "wang2023voyager",
+      "index": 54,
+      "paper_title": "Voyager: An Open-Ended Embodied Agent with Large Language Models",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Guanzhi Wang",
+        "Yuqi Xie",
+        "Yunfan Jiang",
+        "Ajay Mandlekar",
+        "Chaowei Xiao",
+        "Yuke Zhu",
+        "Linxi Fan",
+        "Anima Anandkumar"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2305.16291"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "huang2022ppodetails",
+      "index": 55,
+      "paper_title": "The 37 implementation details of proximal policy optimization",
+      "paper_title_source": "bibtex",
+      "paper_title_verified": true,
+      "authors": [
+        "Shengyi Huang",
+        "Rousslan Fernand Julien Dossa",
+        "Antonin Raffin",
+        "Anssi Kanervisto",
+        "Weixun Wang"
+      ],
+      "links": [],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "hoffman2020acme",
+      "index": 56,
+      "paper_title": "Acme: A Research Framework for Distributed Reinforcement Learning",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Matthew W. Hoffman",
+        "Bobak Shahriari",
+        "John Aslanides",
+        "Gabriel Barth-Maron",
+        "Nikola Momchev",
+        "Danila Sinopalnikov",
+        "Piotr Stańczyk",
+        "Sabela Ramos",
+        "Anton Raichuk",
+        "Damien Vincent",
+        "Léonard Hussenot",
+        "Robert Dadashi",
+        "Gabriel Dulac-Arnold",
+        "Manu Orsini",
+        "Alexis Jacq",
+        "Johan Ferret",
+        "Nino Vieillard",
+        "Seyed Kamyar Seyed Ghasemipour",
+        "Sertan Girgin",
+        "Olivier Pietquin",
+        "Feryal Behbahani",
+        "Tamara Norman",
+        "Abbas Abdolmaleki",
+        "Albin Cassirer",
+        "Fan Yang",
+        "Kate Baumli",
+        "Sarah Henderson",
+        "Abe Friesen",
+        "Ruba Haroun",
+        "Alex Novikov",
+        "Sergio Gómez Colmenarejo",
+        "Serkan Cabi",
+        "Caglar Gulcehre",
+        "Tom Le Paine",
+        "Srivatsan Srinivasan",
+        "Andrew Cowie",
+        "Ziyu Wang",
+        "Bilal Piot",
+        "Nando de Freitas"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2006.00979"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "schmitt2020laser",
+      "index": 57,
+      "paper_title": "Off-Policy Actor-Critic with Shared Experience Replay",
+      "paper_title_source": "openalex",
+      "paper_title_verified": true,
+      "authors": [
+        "Simon Schmitt",
+        "Matteo Hessel",
+        "Karen Simonyan"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1909.11583"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "schaul2015prioritized",
+      "index": 58,
+      "paper_title": "Prioritized Experience Replay",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Tom Schaul",
+        "John Quan",
+        "Ioannis Antonoglou",
+        "David Silver"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1511.05952"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "brock2021agc",
+      "index": 59,
+      "paper_title": "High Performance Large Scale Image Recognition Without Normalization",
+      "paper_title_source": "crossref",
+      "paper_title_verified": true,
+      "authors": [
+        "Priyanka Sharma -",
+        "Pratima Sharma -"
+      ],
+      "links": [
+        "https://www.ijfmr.com/papers/2024/4/26656.pdf"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "ziyin2020laprop",
+      "index": 60,
+      "paper_title": "LaProp: Separating Momentum and Adaptivity in Adam",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Liu Ziyin",
+        "Zhikang T. Wang",
+        "Masahito Ueda"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/2002.04839"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "kingma2014adam",
+      "index": 61,
+      "paper_title": "Adam: A Method for Stochastic Optimization",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Diederik P. Kingma",
+        "Jimmy Ba"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1412.6980"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "gruslys2017reactor",
+      "index": 62,
+      "paper_title": "The Reactor: A fast and sample-efficient Actor-Critic agent for Reinforcement Learning",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Audrunas Gruslys",
+        "Will Dabney",
+        "Mohammad Gheshlaghi Azar",
+        "Bilal Piot",
+        "Marc Bellemare",
+        "Remi Munos"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1704.04651"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "cho2014gru",
+      "index": 63,
+      "paper_title": "Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Kyunghyun Cho",
+        "Bart van Merrienboer",
+        "Caglar Gulcehre",
+        "Dzmitry Bahdanau",
+        "Fethi Bougares",
+        "Holger Schwenk",
+        "Yoshua Bengio"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1406.1078"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "van2019blockrnn",
+      "index": 64,
+      "paper_title": "Rethinking Full Connectivity in Recurrent Neural Networks",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Matthijs Van Keirsbilck",
+        "Alexander Keller",
+        "Xiaodong Yang"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1905.12340"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "machado2018stickyactions",
+      "index": 65,
+      "paper_title": "Revisiting the Arcade Learning Environment: Evaluation Protocols and Open Problems for General Agents",
+      "paper_title_source": "crossref",
+      "paper_title_verified": true,
+      "authors": [
+        "Marlos C. Machado",
+        "Marc G. Bellemare",
+        "Erik Talvitie",
+        "Joel Veness",
+        "Matthew Hausknecht",
+        "Michael Bowling"
+      ],
+      "links": [
+        "https://jair.org/index.php/jair/article/download/11182/26388"
+      ],
+      "lookup_complete": true
+    },
+    {
+      "citation_key": "espeholt2018impala",
+      "index": 66,
+      "paper_title": "IMPALA: Scalable Distributed Deep-RL with Importance Weighted Actor-Learner Architectures",
+      "paper_title_source": "arxiv",
+      "paper_title_verified": true,
+      "authors": [
+        "Lasse Espeholt",
+        "Hubert Soyer",
+        "Remi Munos",
+        "Karen Simonyan",
+        "Volodymir Mnih",
+        "Tom Ward",
+        "Yotam Doron",
+        "Vlad Firoiu",
+        "Tim Harley",
+        "Iain Dunning",
+        "Shane Legg",
+        "Koray Kavukcuoglu"
+      ],
+      "links": [
+        "https://arxiv.org/pdf/1802.01561"
+      ],
+      "lookup_complete": true
+    }
+  ]
+}

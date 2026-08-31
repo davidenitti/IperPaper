@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__IP_TITLE__ · IperPaper</title>
+<link rel="stylesheet" href="__IP_PDFJS_VIEWER_CSS_URL__">
+<style>
+:root { color-scheme:light; --bg:#ecebe7; --ink:#20201e; --muted:#686761; --accent:#0000AA; --ip-header-height:22px; }
+* { box-sizing:border-box; }
+html,body { margin:0; min-height:100%; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+.ip-header { position:sticky; top:0; z-index:30; width:100%; height:var(--ip-header-height); display:flex; align-items:center; justify-content:flex-start; gap:10px; padding:0 11px; background:var(--bg); border:0; border-radius:0; }
+.brand { color:#3266C7; font-weight:750; letter-spacing:-.02em; text-decoration:none; }
+.layout-toggle { border:1px solid rgba(0,0,0,.18); background:#fff; color:var(--ink); font:600 11px/1 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; padding:3px 8px; border-radius:4px; cursor:pointer; }
+.layout-toggle:hover { background:rgba(0,0,170,.07); }
+.layout-toggle[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
+body.side-mode #viewer { padding-left:0; }
+body.side-mode { overflow-x:hidden; }
+body.side-mode #viewer > .page-shell,body.side-mode #viewer > .page-slice,body.side-mode #viewer > .level-accordion { width:min(1100px,calc(100vw - 24px)); margin-left:calc(min(1100px,100vw - 24px) * var(--ip-shift-factor,0)); margin-right:auto; }
+body.side-mode .detail-panel { top:var(--ip-header-height); bottom:0; left:calc(min(1100px,100vw - 24px) * var(--ip-panel-factor,0.75)); width:calc(100vw - min(1100px,100vw - 24px) * var(--ip-panel-factor,0.75) - 5px); max-height:none; border-radius:0; border:0; box-shadow:none; padding:16px 8px; }
+body.side-mode .level-accordion > summary::before { left:calc(4.4% - var(--ip-shift-factor,0) * 50%); }
+body.side-mode .level-accordion > summary::after { left:calc(8.2% - var(--ip-shift-factor,0) * 50% - 2.2%); }
+body.side-mode .level-accordion[open]::before { left:calc(4.4% - var(--ip-shift-factor,0) * 50%); }
+#viewer { padding:18px 12px 56px; }
+.page-shell { position:relative; width:min(1100px,calc(100vw - 24px)); margin:0 auto; background:white; box-shadow:0 4px 20px rgba(0,0,0,.13); overflow:hidden; }
+.page-slice { position:relative; width:min(1100px,calc(100vw - 24px)); margin:0 auto; overflow:hidden; background:#fff; }
+.page-slice.page-end { margin-bottom:0; }
+.page-slice > .page-shell { position:absolute; left:0; width:100%; max-width:none; margin:0; box-shadow:none; overflow:visible; }
+.level-accordion { --level-color:#276b74; position:relative; width:min(1100px,calc(100vw - 24px)); margin:0 auto; background:#fff; }
+.level-accordion > summary { position:relative; display:block; list-style:none; cursor:pointer; overflow:hidden; user-select:none; }
+.level-accordion > summary::-webkit-details-marker { display:none; }
+.level-accordion > summary::marker { content:""; }
+.level-accordion > summary::before { content:""; position:absolute; z-index:8; left:4.4%; top:14%; bottom:14%; width:4px; background:var(--level-color); }
+.level-accordion > summary::after { content:"\25b6"; position:absolute; z-index:8; left:8.2%; top:50%; transform:translate(-50%,-50%); color:var(--level-color); font:17px/1 system-ui,sans-serif; }
+.level-accordion[open] > summary::after { content:"\25bc"; }
+.level-accordion > summary .page-slice { width:100%; pointer-events:none; }
+.level-body { position:relative; }
+.level-accordion[open]::before { content:""; position:absolute; z-index:8; left:4.4%; top:0; bottom:0; width:4px; background:var(--level-color); pointer-events:none; }
+.page-canvas { position:absolute; inset:0; z-index:0; display:block; width:100%; height:100%; }
+.textLayer { z-index:1; }
+.annotationLayer { z-index:2; }
+.annotationLayer section { pointer-events:auto; }
+.annotationLayer .linkAnnotation > a { display:block; width:100%; height:100%; }
+.annotation-layer { position:absolute; inset:0; z-index:3; pointer-events:none; }
+.ip-target { position:absolute; display:block; padding:0; margin:0; border:0; border-radius:2px; background:transparent; cursor:inherit; pointer-events:auto; box-shadow:none; }
+.ip-target:hover { background:rgba(0,0,170,.055); outline:none; box-shadow:none; }
+.ip-target:focus-visible { background:rgba(0,0,170,.055); outline:1px solid rgba(0,0,170,.35); outline-offset:1px; }
+.detail-panel { display:none; position:fixed; z-index:50; right:18px; top:66px; width:min(380px,calc(100vw - 36px)); max-height:calc(100vh - 84px); overflow:auto; background:#fff; border:1px solid rgba(0,0,0,.12); box-shadow:0 12px 44px rgba(0,0,0,.2); padding:20px; }
+.detail-panel.open { display:block; } .annotation-title { color:var(--ink); font-size:15px; font-weight:700; line-height:1.5; margin:0 0 10px; }
+.annotation-title a { color:var(--accent); text-decoration:none; } .annotation-title a:hover { text-decoration:underline; }
+.detail-panel p { margin:10px 0; font-size:15px; line-height:1.5; }
+.ip-background { margin:14px 0 0; padding:10px 12px; background:var(--bg); border:1px solid rgba(0,0,0,.08); border-radius:6px; }
+.ip-background .ip-background-key { text-transform:uppercase; letter-spacing:.06em; font-size:10px; font-weight:800; color:var(--muted); }
+.ip-background .ip-background-key a { color:var(--accent); text-decoration:none; }
+.ip-background .ip-background-key a:hover { text-decoration:underline; }
+.ip-background p { margin:6px 0; font-size:14px; line-height:1.45; }
+.close-detail { position:absolute; right:9px; top:7px; border:0; background:transparent; color:var(--muted); font:22px/1 system-ui,sans-serif; cursor:pointer; }
+.tooltip { position:fixed; display:none; z-index:60; max-width:380px; pointer-events:none; background:#fff; color:var(--ink); padding:11px 13px; border:1px solid rgba(0,0,0,.12); border-radius:8px; box-shadow:0 8px 28px rgba(0,0,0,.18); font-size:15px; line-height:1.45; }
+.tooltip.figure-tooltip { padding:8px; max-width:calc(100vw - 28px); }
+.figure-tooltip-image { display:block; width:100%; height:auto; max-height:55vh; object-fit:contain; }
+.figure-tooltip-caption { margin-top:8px; padding:0 3px 2px; font-size:14px; line-height:1.4; }
+.ask-ai { position:fixed; display:none; z-index:70; flex-direction:column; align-items:stretch; overflow:hidden; background:#fff; border:1px solid rgba(0,0,0,.14); border-radius:9px; box-shadow:0 10px 32px rgba(0,0,0,.22); font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+.ask-ai button { display:block; width:100%; border:0; background:transparent; color:var(--ink); font:600 13px/1.2 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; text-align:left; padding:9px 14px; cursor:pointer; white-space:nowrap; }
+.ask-ai button:hover { background:rgba(0,0,170,.07); }
+.ask-ai button + button { border-top:1px solid rgba(0,0,0,.08); }
+.ip-math { display:inline-block; width:auto; max-width:100%; height:auto; vertical-align:-.30em; margin:0 .04em; zoom:1.1; }
+.ip-math-display { display:block; width:auto; max-width:100%; height:auto; margin:8px auto; }
+.loading,.error { max-width:720px; margin:60px auto; padding:20px; background:white; box-shadow:0 3px 14px rgba(0,0,0,.1); }
+@media (max-width:700px) { #viewer { padding-left:0; padding-right:0; } .page-shell,.page-slice,.level-accordion { width:100vw; } .detail-panel { left:10px; right:10px; top:auto; bottom:10px; width:auto; max-height:52vh; } body.side-mode #viewer > .page-shell,body.side-mode #viewer > .page-slice,body.side-mode #viewer > .level-accordion { width:100vw; } body.side-mode .detail-panel { left:10px; right:10px; top:auto; bottom:10px; width:auto; max-height:52vh; } }
+</style>
+</head>
+<body>
+<header class="ip-header"><a class="brand" href="https://github.com/davidenitti/IperPaper/" target="_blank" rel="noopener noreferrer">IperPaper</a><button id="layout-toggle" class="layout-toggle" type="button" aria-pressed="false" title="Toggle split reading view">Split</button></header>
+<main id="viewer"><div id="loading" class="loading">Loading paper…</div></main>
+<aside id="detail" class="detail-panel" aria-live="polite"><button id="close-detail" class="close-detail" aria-label="Close explanation">×</button><div id="detail-content"></div></aside>
+<div id="tooltip" class="tooltip" role="tooltip"></div>
+<div id="ask-ai" class="ask-ai" role="menu"><button type="button" data-provider="chatgpt" role="menuitem">Ask ChatGPT</button><button type="button" data-provider="perplexity" role="menuitem">Ask Perplexity</button></div>
+<script type="module">
+const PDFJS_MODULE_URL="__IP_PDFJS_MODULE_URL__";
+const PDFJS_WORKER_URL="__IP_PDFJS_WORKER_URL__";
+const PDFJS_WASM_URL="__IP_PDFJS_WASM_URL__";
+const PDFJS_CMAP_URL="__IP_PDFJS_CMAP_URL__";
+const PDFJS_STANDARD_FONT_URL="__IP_PDFJS_STANDARD_FONT_URL__";
+const PDF_BASE64="__IP_PDF_BASE64__";
+const ANNOTATIONS=__IP_ANNOTATIONS__;
+const TARGETS=__IP_TARGETS__;
+const PAGE_SIZES=__IP_PAGE_SIZES__;
+const LEVEL_SECTIONS=__IP_LEVEL_SECTIONS__;
+const TEXT_MARGINS=__IP_TEXT_MARGINS__;
+const PAPER_TITLE=__IP_PAPER_TITLE_JSON__;
+const byId=new Map(ANNOTATIONS.map(a=>[a.id,a]));
+const targetsByPage=new Map();
+for(const target of TARGETS){if(!targetsByPage.has(target.page))targetsByPage.set(target.page,[]);targetsByPage.get(target.page).push(target);}
+
+let pdfDocument=null;
+let pdfjsLib=null;
+let visibilityObserver=null;
+let resizeObserver=null;
+const pageStates=new WeakMap();
+
+function renderDetail(a){
+  if(!a)return;
+  const panel=document.getElementById('detail'),d=document.getElementById('detail-content');
+  d.innerHTML='';
+  const title=document.createElement('div');title.className='annotation-title';
+  const primaryBackground=a.background_only&&a.background_html&&a.background_html.length?a.background_html[0]:null;
+  if(primaryBackground&&primaryBackground.link){const link=document.createElement('a');link.href=primaryBackground.link;link.target='_blank';link.rel='noopener noreferrer';if(a.label_html)link.innerHTML=a.label_html;else link.textContent=a.label;title.append(link);}
+  else if(a.label_html){title.innerHTML=a.label_html;}else{title.textContent=a.label;}
+  d.append(title);
+  if(a.background_only&&a.background_html&&a.background_html.length){
+    d.append(makeBackgroundBlock(a.background_html[0],true));
+    for(const bg of (a.background_html||[]).slice(1))d.append(makeBackgroundBlock(bg));
+    panel.classList.add('open');return;
+  }
+  const s=document.createElement('p');s.innerHTML=a.short_html;
+  const x=document.createElement('p');x.innerHTML=a.details_html;
+  d.append(s,x);
+  for(const bg of a.background_html||[])d.append(makeBackgroundBlock(bg));
+  panel.classList.add('open');
+}
+function makeBackgroundBlock(bg,hideHeading=false){
+  const wrap=document.createElement('div');wrap.className='ip-background';
+  if(!hideHeading){const label=bg.label||bg.key;const h=document.createElement('div');h.className='ip-background-key';if(bg.link){const link=document.createElement('a');link.href=bg.link;link.target='_blank';link.rel='noopener noreferrer';link.textContent=label;h.append(link);}else{h.textContent=label;}wrap.append(h);}
+  const sp=document.createElement('p');sp.innerHTML=bg.short_html;
+  const dt=document.createElement('p');dt.innerHTML=bg.details_html;
+  wrap.append(sp,dt);return wrap;
+}
+function showTooltip(a,x,y){
+  if(!a)return;
+  const t=document.getElementById('tooltip');
+  t.classList.toggle('figure-tooltip',Boolean(a.figure_preview));
+  if(a.figure_preview){
+    t.innerHTML='';
+    t.style.width=(a.figure_preview.width_pt*a.figure_preview.scale)+'pt';
+    const image=document.createElement('img');image.className='figure-tooltip-image';image.src=a.figure_preview.src;image.alt=a.label;
+    const caption=document.createElement('div');caption.className='figure-tooltip-caption';
+    const prefix=a.label+': ';
+    if(a.short_html.startsWith(prefix)){const label=document.createElement('strong');label.textContent=a.label;const description=document.createElement('span');description.innerHTML=': '+a.short_html.slice(prefix.length);caption.append(label,description);}else{caption.innerHTML=a.short_html;}
+    t.append(image,caption);
+  }else{
+    t.style.width='';
+    t.innerHTML=a.tooltip_html||a.short_html;
+  }
+  t.style.display='block';
+  const pad=14,r=t.getBoundingClientRect(),header=document.querySelector('.ip-header');
+  const minTop=(header?.getBoundingClientRect().bottom||0)+pad;
+  t.style.left=Math.max(pad,Math.min(x+12,innerWidth-r.width-pad))+'px';
+  t.style.top=Math.max(minTop,Math.min(y+14,innerHeight-r.height-pad))+'px';
+}
+function hideTooltip(){document.getElementById('tooltip').style.display='none';}
+function isReferenceTarget(id){return id.startsWith('eqref_')||id.startsWith('figref_')||id.startsWith('tabref_')||id.startsWith('bibref_');}
+function underlyingPdfLink(el,event){for(const node of document.elementsFromPoint(event.clientX,event.clientY)){const link=node.closest?.('.annotationLayer a');if(link)return link;}const targetRect=el.getBoundingClientRect(),shell=el.closest('.page-shell');if(!shell)return null;for(const link of shell.querySelectorAll('.annotationLayer a')){const r=link.getBoundingClientRect();if(r.right>targetRect.left&&r.left<targetRect.right&&r.bottom>targetRect.top&&r.top<targetRect.bottom)return link;}return null;}
+function addTargets(layer,pageNumber){for(const target of targetsByPage.get(pageNumber)||[]){const a=byId.get(target.id);if(!a)continue;const el=document.createElement('button');el.type='button';el.className='ip-target';el.setAttribute('aria-label',a.label+': '+a.short);el.style.left=(target.x*100)+'%';el.style.top=(target.y*100)+'%';el.style.width=(target.width*100)+'%';el.style.height=(target.height*100)+'%';el.addEventListener('mousemove',e=>showTooltip(a,e.clientX,e.clientY));el.addEventListener('mouseleave',hideTooltip);el.addEventListener('focus',()=>{const r=el.getBoundingClientRect();showTooltip(a,r.left,r.bottom);});el.addEventListener('blur',hideTooltip);el.addEventListener('click',e=>{if(a.external_url){hideTooltip();window.open(a.external_url,'_blank','noopener,noreferrer');return;}if(isReferenceTarget(target.id)){const link=underlyingPdfLink(el,e);if(link){hideTooltip();link.click();return;}}renderDetail(a);hideTooltip();});layer.appendChild(el);}}
+
+function decodePdf(){const binary=atob(PDF_BASE64);const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes;}
+function currentPageNumber(){const slices=[...document.querySelectorAll('.page-slice'),...document.querySelectorAll('.page-shell')].filter(el=>el.offsetParent!==null&&(!el.classList.contains('page-shell')||!el.closest('.page-slice')));const marker=window.scrollY+64;let best=1,bestDistance=Infinity;for(const slice of slices){const top=slice.getBoundingClientRect().top+window.scrollY;const distance=Math.abs(top-marker);if(distance<bestDistance){bestDistance=distance;best=Number(slice.dataset.pageNumber);}}return best;}
+function pointValue(point){return (point.page-1)+point.y;}
+function comparePoints(a,b){return pointValue(a)-pointValue(b);}
+function openAncestors(element){for(let node=element.parentElement;node;node=node.parentElement){if(node.matches?.('details.level-accordion'))node.open=true;}}
+function revealPdfDestination(pageNumber,y=0){const candidates=[...document.querySelectorAll(`.page-slice[data-page-number="${pageNumber}"]`)];const target=candidates.find(slice=>y>=Number(slice.dataset.yStart)-.0001&&y<=Number(slice.dataset.yEnd)+.0001)||candidates[0]||document.querySelector(`.page-shell[data-page-number="${pageNumber}"]`);if(!target)return;openAncestors(target);requestAnimationFrame(()=>{const shell=target.classList.contains('page-shell')?target:target.querySelector(':scope > .page-shell');if(!shell)return;const rect=shell.getBoundingClientRect(),header=document.querySelector('.ip-header'),offset=(header?.getBoundingClientRect().height||0)+8;window.scrollTo({top:Math.max(0,window.scrollY+rect.top+y*rect.height-offset),behavior:'smooth'});});}
+
+class IperPaperLinkService{
+  constructor(){this.eventBus=null;this.externalLinkEnabled=true;this.externalLinkTarget=2;this.externalLinkRel='noopener noreferrer nofollow';}
+  get isInPresentationMode(){return false;}
+  addLinkAttributes(link,url,newWindow=false){if(!url||typeof url!=='string')return;link.href=url;link.target=(newWindow||this.externalLinkTarget===2)?'_blank':'';link.rel=this.externalLinkRel;}
+  getAnchorUrl(anchor){return anchor||'#';}
+  getDestinationHash(){return '#';}
+  async goToDestination(dest){let explicit=typeof dest==='string'?await pdfDocument.getDestination(dest):dest;if(!Array.isArray(explicit))return;const ref=explicit[0];let pageNumber=null;if(Number.isInteger(ref))pageNumber=ref+1;else if(ref&&typeof ref==='object'){try{pageNumber=(await pdfDocument.getPageIndex(ref))+1;}catch(_){}}if(!pageNumber)return;const rawTop=typeof explicit[3]==='number'?explicit[3]:PAGE_SIZES[pageNumber-1].height;const y=Math.max(0,Math.min(1,(PAGE_SIZES[pageNumber-1].height-rawTop)/PAGE_SIZES[pageNumber-1].height));revealPdfDestination(pageNumber,y);}
+  executeNamedAction(action){const current=currentPageNumber();const last=PAGE_SIZES.length;const destinations={FirstPage:1,LastPage:last,NextPage:Math.min(last,current+1),PrevPage:Math.max(1,current-1)};const pageNumber=destinations[action];if(pageNumber)revealPdfDestination(pageNumber);}
+  executeSetOCGState(){}
+  async getAttachmentContent(id){try{return await pdfDocument.getAttachmentContent(id);}catch(_){return null;}}
+}
+const linkService=new IperPaperLinkService();
+
+async function renderPage(shell){
+  if(!pdfDocument)return;
+  const pageNumber=Number(shell.dataset.pageNumber),width=shell.clientWidth;
+  if(width<1)return;
+  let state=pageStates.get(shell);
+  if(!state){state={page:null,renderTask:null,textLayer:null,annotationLayer:null,generation:0,width:0};pageStates.set(shell,state);}
+  if(Math.abs(state.width-width)<0.75&&shell.dataset.rendered==='1')return;
+  if(state.renderTask){try{state.renderTask.cancel();}catch(_){}}
+  state.textLayer?.cancel?.();
+  const generation=++state.generation;
+  const page=state.page||(state.page=await pdfDocument.getPage(pageNumber));
+  if(generation!==state.generation)return;
+  const baseViewport=page.getViewport({scale:1});
+  const viewport=page.getViewport({scale:width/baseViewport.width});
+  shell.style.setProperty('--total-scale-factor',String(viewport.scale));
+  shell.style.setProperty('--scale-round-x','1px');shell.style.setProperty('--scale-round-y','1px');
+  const outputScale=Math.min(window.devicePixelRatio||1,3),canvas=shell.querySelector('canvas');
+  canvas.width=Math.max(1,Math.ceil(viewport.width*outputScale));canvas.height=Math.max(1,Math.ceil(viewport.height*outputScale));canvas.style.width=viewport.width+'px';canvas.style.height=viewport.height+'px';
+  const context=canvas.getContext('2d',{alpha:false});const transform=outputScale===1?null:[outputScale,0,0,outputScale,0,0];
+  try{
+    state.renderTask=page.render({canvasContext:context,viewport,transform});await state.renderTask.promise;if(generation!==state.generation)return;
+    const textLayerDiv=shell.querySelector('.textLayer');textLayerDiv.replaceChildren();state.textLayer=new pdfjsLib.TextLayer({textContentSource:page.streamTextContent({includeMarkedContent:true}),container:textLayerDiv,viewport});await state.textLayer.render();if(generation!==state.generation)return;
+    const annotationLayerDiv=shell.querySelector('.annotationLayer');annotationLayerDiv.replaceChildren();const nativeAnnotations=(await page.getAnnotations({intent:'display'})).filter(annotation=>{const url=annotation?.url||annotation?.unsafeUrl||'',destination=annotation?.dest||'';return !(typeof url==='string'&&url.startsWith('iperpaper:'))&&!(typeof destination==='string'&&destination.startsWith('iperpaper-level-'));});
+    state.annotationLayer=new pdfjsLib.AnnotationLayer({div:annotationLayerDiv,page,viewport:viewport.clone({dontFlip:true}),linkService,annotationStorage:pdfDocument.annotationStorage,annotationCanvasMap:new Map()});
+    await state.annotationLayer.render({annotations:nativeAnnotations,renderForms:false,enableScripting:false,hasJSActions:false,fieldObjects:null,optionalContentConfig:await pdfDocument.getOptionalContentConfig({intent:'display'})});
+    if(generation===state.generation){state.width=width;shell.dataset.rendered='1';}
+  }catch(error){if(error?.name!=='RenderingCancelledException'&&error?.name!=='AbortException')throw error;}finally{if(generation===state.generation)state.renderTask=null;}
+}
+
+function createPageShell(size,pageNumber){const shell=document.createElement('section');shell.className='page-shell';shell.dataset.pageNumber=String(pageNumber);shell.style.aspectRatio=size.width+' / '+size.height;shell.setAttribute('aria-label','Page '+pageNumber);const canvas=document.createElement('canvas');canvas.className='page-canvas';canvas.setAttribute('aria-label','Rendered PDF page '+pageNumber);shell.appendChild(canvas);const textLayer=document.createElement('div');textLayer.className='textLayer';shell.appendChild(textLayer);const nativeAnnotationLayer=document.createElement('div');nativeAnnotationLayer.className='annotationLayer';shell.appendChild(nativeAnnotationLayer);const layer=document.createElement('div');layer.className='annotation-layer';addTargets(layer,pageNumber);shell.appendChild(layer);return shell;}
+function observeShell(shell){visibilityObserver.observe(shell);resizeObserver.observe(shell);}
+function createPageSlice(pageNumber,yStart,yEnd){const size=PAGE_SIZES[pageNumber-1],span=Math.max(0,yEnd-yStart),slice=document.createElement('div');slice.className='page-slice';if(yEnd>=.999999)slice.classList.add('page-end');slice.dataset.pageNumber=String(pageNumber);slice.dataset.yStart=String(yStart);slice.dataset.yEnd=String(yEnd);slice.style.aspectRatio=size.width+' / '+(size.height*span);const shell=createPageShell(size,pageNumber);shell.style.top=(-100*yStart/span)+'%';slice.appendChild(shell);observeShell(shell);return slice;}
+function appendPdfRange(parent,start,end){if(comparePoints(start,end)>=-.000001)return;for(let page=start.page;page<=end.page;page++){const yStart=page===start.page?start.y:0,yEnd=page===end.page?end.y:1;if(yEnd-yStart>.000001)parent.appendChild(createPageSlice(page,yStart,yEnd));}}
+function sectionHeadingRange(section){if(section.title){const topPad=.0045,bottomTrim=.002,start=Math.max(0,section.title.y-topPad),end=Math.min(1,section.title.y+section.title.height-bottomTrim);return {start:{page:section.title.page,y:start},end:{page:section.title.page,y:end}};}const end={page:section.content.page,y:Math.max(0,section.content.y-.011)};let start;if(section.start.page===end.page){start={page:end.page,y:Math.min(end.y,section.start.y+.002)};}else{start={page:end.page,y:Math.max(0,end.y-.05)};}if(comparePoints(start,end)>=-.012)start={page:end.page,y:Math.max(0,end.y-.035)};return {start,end};}
+function levelSectionsInOrder(){return [...LEVEL_SECTIONS].sort((a,b)=>comparePoints(a.start,b.start));}
+function createLevelAccordion(section){const heading=sectionHeadingRange(section),details=document.createElement('details');details.className='level-accordion level-2';details.dataset.levelId=section.id;const summary=document.createElement('summary');summary.setAttribute('aria-label','Level 2 section; expand');appendPdfRange(summary,heading.start,heading.end);const body=document.createElement('div');body.className='level-body';appendPdfRange(body,heading.end,section.end);details.append(summary,body);summary.addEventListener('click',event=>{event.preventDefault();details.open=!details.open;});details.addEventListener('toggle',()=>{summary.setAttribute('aria-label','Level 2 section; '+(details.open?'collapse':'expand'));if(details.open)for(const shell of body.querySelectorAll('.page-shell'))renderPage(shell).catch(showError);});return details;}
+function appendStructuredRange(parent,start,end,sections){let cursor=start;for(const section of sections){const heading=sectionHeadingRange(section);appendPdfRange(parent,cursor,heading.start);parent.appendChild(createLevelAccordion(section));cursor=section.end;}appendPdfRange(parent,cursor,end);}
+function setupObservers(){visibilityObserver=new IntersectionObserver(entries=>{for(const entry of entries){if(entry.isIntersecting)renderPage(entry.target).catch(showError);}},{rootMargin:'1400px 0px'});resizeObserver=new ResizeObserver(entries=>{for(const entry of entries){const shell=entry.target;if(shell.dataset.rendered==='1')renderPage(shell).catch(showError);}});}
+function buildPages(){const viewer=document.getElementById('viewer');viewer.innerHTML='';setupObservers();if(LEVEL_SECTIONS.length){viewer.classList.add('structured');appendStructuredRange(viewer,{page:1,y:0},{page:PAGE_SIZES.length,y:1},levelSectionsInOrder());return;}for(let i=0;i<PAGE_SIZES.length;i++){const shell=createPageShell(PAGE_SIZES[i],i+1);viewer.appendChild(shell);observeShell(shell);}}
+function showError(error){console.error(error);const viewer=document.getElementById('viewer');viewer.innerHTML='';const box=document.createElement('div');box.className='error';box.textContent='Could not render the PDF reader: '+(error?.message||String(error));viewer.appendChild(box);}
+async function start(){pdfjsLib=await import(PDFJS_MODULE_URL);pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_WORKER_URL;pdfDocument=await pdfjsLib.getDocument({data:decodePdf(),wasmUrl:PDFJS_WASM_URL,cMapUrl:PDFJS_CMAP_URL,cMapPacked:true,standardFontDataUrl:PDFJS_STANDARD_FONT_URL}).promise;if(pdfDocument.numPages!==PAGE_SIZES.length)throw new Error('PDF page count does not match the annotation geometry.');buildPages();}
+
+document.getElementById('close-detail').addEventListener('click',()=>document.getElementById('detail').classList.remove('open'));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('detail').classList.remove('open');});
+const layoutToggle=document.getElementById('layout-toggle');
+function rerenderAllPages(){for(const shell of document.querySelectorAll('.page-shell')){if(shell.dataset.rendered==='1'){shell.dataset.rendered='0';renderPage(shell).catch(showError);}}}
+function applyLayout(mode){const side=mode==='side';document.body.classList.toggle('side-mode',side);layoutToggle.setAttribute('aria-pressed',side?'true':'false');const rootStyle=document.documentElement.style;if(side){rootStyle.setProperty('--ip-shift-factor',(-2*TEXT_MARGINS.left/3).toFixed(6));rootStyle.setProperty('--ip-panel-factor',(TEXT_MARGINS.right-2*TEXT_MARGINS.left/3).toFixed(6));}else{rootStyle.removeProperty('--ip-shift-factor');rootStyle.removeProperty('--ip-panel-factor');}rerenderAllPages();try{localStorage.setItem('iperpaper-layout',mode);}catch(_){}}
+layoutToggle.addEventListener('click',()=>applyLayout(document.body.classList.contains('side-mode')?'default':'side'));
+try{if(localStorage.getItem('iperpaper-layout')==='side')applyLayout('side');}catch(_){}
+const askBox=document.getElementById('ask-ai');
+function askPromptText(){const selection=getSelection(),text=selection?selection.toString().replace(/\s+/g,' ').trim():'';return text.length>2000?text.slice(0,2000)+'…':text;}
+function askUrl(provider,text){const prompt='Explain this in detail for the paper "'+PAPER_TITLE+'":\n'+text;if(provider==='perplexity')return 'https://www.perplexity.ai/search?q='+encodeURIComponent(prompt);return 'https://chatgpt.com/?q='+encodeURIComponent(prompt);}
+function hideAskBox(){askBox.style.display='none';}
+document.addEventListener('selectionchange',()=>{const selection=getSelection();if(!selection||selection.isCollapsed){hideAskBox();return;}const text=selection.toString().trim();if(!text){hideAskBox();return;}const rect=selection.getRangeAt(0).getBoundingClientRect();if(!rect||(!rect.width&&!rect.height)){hideAskBox();return;}askBox.style.display='flex';const width=askBox.offsetWidth||150,height=askBox.offsetHeight||76;askBox.style.left=Math.max(8,Math.min(rect.left,innerWidth-width-8))+'px';askBox.style.top=Math.max(8,rect.top-height-8>8?rect.top-height-8:rect.bottom+8)+'px';});
+for(const button of askBox.querySelectorAll('button')){button.addEventListener('mousedown',e=>e.preventDefault());button.addEventListener('click',e=>{e.stopPropagation();const text=askPromptText();hideAskBox();if(!text)return;window.open(askUrl(e.currentTarget.dataset.provider,text),'_blank','noopener');});}
+document.addEventListener('mousedown',e=>{if(!askBox.contains(e.target))hideAskBox();});
+window.addEventListener('scroll',hideAskBox,{passive:true});
+start().catch(showError);
+</script>
+</body></html>

@@ -1,0 +1,9 @@
+Consider an \iperpaper{ebm}{energy-based model} with probability
+\[
+p_{\iperpaper{theta}{\theta}}(x)
+= \frac{e^{-\iperpaper{energy}{E_\theta(x)}}}{\iperpaper{partition}{Z_\theta}}.
+\]
+
+The parameter $\iperpaper{theta}{\theta}$ is learned from data. The \iperpaper{partition_prose}{partition function} ensures that the density is normalized.
+
+We can train the model by following the gradient $\iperpaper{gradient}{\nabla_\theta \log p_\theta(x)}$.

@@ -1,0 +1,480 @@
+{
+  "title": "A Tutorial on Gumbel-Max Watermarking for Language Models",
+  "background": {
+    "Uniform": {
+      "short": "$\\U(0,1)$ denotes the continuous uniform distribution on the unit interval $(0,1)$.",
+      "details": "The continuous $\\U(0,1)$ distribution has constant density $f(u)=1$ for $0<u<1$, so intervals of equal length have equal probability. Its CDF is $F(u)=u$ on $0\\le u\\le1$, its mean is $1/2$, and its variance is $1/12$. Strict and non-strict inequalities have the same probability because the distribution is continuous.",
+      "link": "https://en.wikipedia.org/wiki/Continuous_uniform_distribution"
+    },
+    "Exp": {
+      "short": "An exponential distribution is a continuous probability distribution on the nonnegative real numbers, controlled by a positive rate parameter $\\lambda$.",
+      "details": "With rate $\\lambda>0$, its density is $f_Y(x)=\\lambda e^{-\\lambda x}$ and its survival function is $\\Pr(Y>x)=e^{-\\lambda x}$ for $x\\ge0$. Its mean is $1/\\lambda$, and it is memoryless: $\\Pr(Y>s+t\\mid Y>s)=\\Pr(Y>t)$. The inverse-transform identity $-\\log U\\sim\\Exp(1)$ holds for $U\\sim\\U(0,1)$, and if $E\\sim\\Exp(1)$ with $c>0$, then $E/c\\sim\\Exp(c)$.",
+      "link": "https://en.wikipedia.org/wiki/Exponential_distribution"
+    },
+    "Gumbel": {
+      "short": "A Gumbel distribution is a continuous probability distribution on the real line, often associated with random maxima.",
+      "details": "The standard Gumbel distribution has CDF $\\Pr(G\\le g)=e^{-e^{-g}}$ for $g\\in\\mathbb R$ and density $f(g)=e^{-(g+e^{-g})}$. It belongs to the classical extreme-value family. Adding independent standard Gumbel noise to log-probabilities turns an argmax into an exact categorical sample (the Gumbel-max trick).",
+      "link": "https://en.wikipedia.org/wiki/Gumbel_distribution"
+    },
+    "CDF": {
+      "short": "The cumulative distribution function (CDF) $F_X(x)=\\Pr(X\\le x)$ gives the probability that a random variable takes a value at most $x$.",
+      "details": "For continuous variables the CDF is nondecreasing with limits $0$ and $1$; a smaller CDF at every threshold means a stochastically larger distribution. The survival function is $\\Pr(X>x)=1-F_X(x)$.",
+      "link": "https://en.wikipedia.org/wiki/Cumulative_distribution_function"
+    },
+    "Gamma": {
+      "short": "A Gamma distribution with shape $k>0$ and rate $\\lambda>0$ is a continuous probability distribution on the nonnegative real numbers.",
+      "details": "Its density is $f(x)=\\lambda^k x^{k-1}e^{-\\lambda x}/\\Gamma(k)$ for $x\\ge0$, where $\\Gamma(k)$ is the Gamma function. When $k$ is a positive integer, a sum of $k$ independent exponential variables with common rate $\\lambda$ is Gamma distributed with shape $k$ and rate $\\lambda$; its mean is $k/\\lambda$ and its variance is $k/\\lambda^2$.",
+      "link": "https://en.wikipedia.org/wiki/Gamma_distribution",
+      "background": [
+        "GammaFunction"
+      ]
+    },
+    "GammaFunction": {
+      "label": "Gamma function",
+      "short": "The Gamma function $\\Gamma(k)=\\int_0^\\infty t^{k-1}e^{-t}\\,dt$ generalizes the factorial to positive non-integer arguments.",
+      "details": "For positive integer $k$, $\\Gamma(k)=(k-1)!$. It appears as the normalizing constant of the Gamma distribution density, ensuring the density integrates to one.",
+      "link": "https://en.wikipedia.org/wiki/Gamma_function"
+    },
+    "Beta": {
+      "short": "A Beta distribution is a continuous probability distribution on the unit interval $(0,1)$ with two positive shape parameters.",
+      "details": "This tutorial uses $\\Beta(a,1)$, whose density is $f(x)=a x^{a-1}$ for $0<x<1$ and whose CDF is $F(x)=x^{a}$ on $0\\le x\\le1$. It arises here as the conditional distribution of a selected uniform value under watermarking.",
+      "link": "https://en.wikipedia.org/wiki/Beta_distribution"
+    },
+    "PRF": {
+      "short": "A pseudorandom function ($\\PRF$) is deterministic for a fixed key but designed to be computationally indistinguishable from a random function without that key.",
+      "details": "The same key and inputs always produce the same output, so two parties holding the key can recompute identical values independently. Changing an input produces a new random-looking value, although finite outputs can collide.",
+      "link": "https://en.wikipedia.org/wiki/Pseudorandom_function_family"
+    },
+    "argmax": {
+      "short": "$\\argmax$ returns the argument at which an objective attains its maximum.",
+      "details": "Applying a strictly increasing function to every objective value preserves its $\\argmax$; negating the objective exchanges maximization and minimization.",
+      "link": "https://en.wikipedia.org/wiki/Arg_max"
+    },
+    "exponential_race": {
+      "short": "An exponential race selects the minimum among several independent exponential variables.",
+      "details": "For independent exponential variables with rates $\\lambda_j$, $\\Pr(X_i=\\min_jX_j)=\\lambda_i/\\sum_j\\lambda_j$. Exponential races are a standard construction for categorical sampling.",
+      "link": "https://en.wikipedia.org/wiki/Exponential_distribution"
+    },
+    "p_value": {
+      "short": "A p-value is the null-hypothesis probability of obtaining a test statistic at least as extreme as the observed one.",
+      "details": "A p-value is the probability, under the null hypothesis, of obtaining the observed test statistic or a result at least as extreme. It is computed by comparing the observed statistic with its null distribution. A small p-value means that the result would be unusual if the null hypothesis were true, providing evidence against it; it is not the probability that the null hypothesis itself is true. Its validity also depends on following the pre-specified testing protocol, including the stopping rule and the choice of which outcomes count as more extreme.",
+      "link": "https://en.wikipedia.org/wiki/P-value"
+    }
+  },
+  "annotations": [
+    {
+      "id": "tutorial_annotation_example",
+      "kind": "concept",
+      "label": "this annotated phrase",
+      "short": "This is an example of the short explanation shown when you hover over blue annotated text.",
+      "details": "Clicking an authored IperPaper annotation opens this longer explanation in the side panel. Throughout the tutorial, annotations use the same interaction to explain a symbol, equation step, notation choice, or concept in its local context.",
+      "background": []
+    },
+    {
+      "id": "model_distribution",
+      "kind": "symbol",
+      "label": "$\\mathbf p_t=(p_{t,1},\\ldots,p_{t,V})$",
+      "short": "$\\mathbf p_t$ is the language model's categorical distribution at token position $t$.",
+      "details": "Its $i$th coordinate $p_{t,i}$ is the probability assigned to candidate token $i$; all coordinates are nonnegative and sum to one.",
+      "background": []
+    },
+    {
+      "id": "probability_normalization",
+      "kind": "equation",
+      "label": "$\\sum_{i=1}^{V}p_{t,i}=1$",
+      "short": "The candidate probabilities sum to one.",
+      "details": "$\\sum_{i=1}^{V}p_{t,i}=1$ makes $\\mathbf p_t$ a valid categorical distribution over the $V$ vocabulary entries.",
+      "background": []
+    },
+    {
+      "id": "keyed_uniform",
+      "kind": "symbol",
+      "label": "$r_{t,i}\\in(0,1)$",
+      "short": "$r_{t,i}$ is the secret-key-derived value for candidate $i$ at position $t$.",
+      "details": "The ideal analysis treats these values as independent $\\U(0,1)$ variables. In the implementation described by Li et al., the key and preceding tokens determine a PCG-64 seed, and candidate index $i$ selects the $i$th entry of the regenerated vector. NumPy's floating-point generator returns values in $[0,1)$, so an implementation applying logarithms should explicitly avoid exact endpoints.",
+      "background": [
+        "Uniform"
+      ]
+    },
+    {
+      "id": "emitted_token",
+      "kind": "symbol",
+      "label": "$w_t$",
+      "short": "$w_t$ is the token index actually emitted at position $t$.",
+      "details": "The Gumbel-max decoder chooses $w_t$ by ranking every supported candidate with its model probability and keyed pseudorandom value.",
+      "background": []
+    },
+    {
+      "id": "selected_value",
+      "kind": "symbol",
+      "label": "$r_{t,w_t}$",
+      "short": "$r_{t,w_t}$ is the keyed value attached to the token that was actually emitted.",
+      "details": "It is the $i=w_t$ coordinate of the candidate vector $(r_{t,1},\\ldots,r_{t,V})$. The verifier regenerates this chosen coordinate and uses it for detection.",
+      "background": []
+    },
+    {
+      "id": "keyed_prf",
+      "kind": "operator",
+      "label": "$\\PRF_{\\Key}(w_{t-m},\\ldots,w_{t-1},i)$",
+      "short": "$\\PRF_{\\Key}$ is a pseudorandom function that takes the secret key, the preceding token context, and candidate-token index $i$, and produces a deterministic value $r_{t,i}$ in $(0,1)$ that appears random to someone without the key.",
+      "details": "The same key, context, and candidate index always produce the same value, allowing the generator and verifier to compute $r_{t,i}$ independently. Changing an input is intended to produce a new random-looking value, although finite hash or pseudorandom outputs can collide. In the implementation described by Li et al., the key and preceding $m$ tokens determine a PCG-64 seed, and $i$ selects the corresponding entry of the generated candidate vector. Both parties must use the same key, tokenization, context rule, hashing method, pseudorandom generator, and candidate ordering.",
+      "background": [
+        "PRF"
+      ]
+    },
+    {
+      "id": "generation_argmax",
+      "kind": "operator",
+      "label": "$\\argmax_{i:p_{t,i}>0}$",
+      "short": "This $\\argmax$ searches the supported candidates $i$ with $p_{t,i}>0$.",
+      "details": "It returns the index whose keyed score $r_{t,i}^{1/p_{t,i}}$ is largest; zero-probability candidates are excluded because they cannot be emitted.",
+      "background": [
+        "argmax"
+      ]
+    },
+    {
+      "id": "generation_score",
+      "kind": "notation",
+      "label": "$r_{t,i}^{1/p_{t,i}}$",
+      "short": "$r_{t,i}^{1/p_{t,i}}$ combines candidate $i$'s model probability $p_{t,i}$ with its keyed pseudorandom value $r_{t,i}$. The generator emits the candidate with the largest such score.",
+      "details": "Because $0<r_{t,i}<1$, a larger keyed value gives a larger score. A larger model probability makes the exponent $1/p_{t,i}$ smaller, which keeps the score closer to one and therefore also favors that candidate. Thus the rule balances model preference with secret pseudorandomness. Although the score itself is not a probability, maximizing it selects candidate $i$ with probability exactly $p_{t,i}$ when the keyed values behave as independent uniforms. This is equivalent to minimizing $(-\\log r_{t,i})/p_{t,i}$.",
+      "background": [
+        "Uniform"
+      ]
+    },
+    {
+      "id": "derivation_power_form",
+      "kind": "equation",
+      "label": "$\\argmax_{i:p_{t,i}>0}r_{t,i}^{1/p_{t,i}}$",
+      "short": "This first line substitutes the power-form selection rule from Equation (1).",
+      "details": "By definition, $w_t$ is the supported candidate $i$ maximizing $r_{t,i}^{1/p_{t,i}}$. The condition $p_{t,i}>0$ keeps the exponent finite and excludes candidates that the model cannot emit.",
+      "background": [
+        "argmax"
+      ]
+    },
+    {
+      "id": "derivation_monotone_log",
+      "kind": "equation",
+      "label": "$\\argmax_{i:p_{t,i}>0}\\log(r_{t,i}^{1/p_{t,i}})$",
+      "short": "Applying $\\log$ does not change the $\\argmax$ because every score is positive and $\\log$ is strictly increasing on $(0,\\infty)$.",
+      "details": "For any two candidates, $r_{t,i}^{1/p_{t,i}} \\ge r_{t,j}^{1/p_{t,j}}$ if and only if their logarithms have the same ordering. Strict monotonicity also preserves ties, so the entire maximizing set is unchanged.",
+      "background": [
+        "argmax"
+      ]
+    },
+    {
+      "id": "derivation_log_power",
+      "kind": "equation",
+      "label": "$\\argmax_{i:p_{t,i}>0}\\frac{1}{p_{t,i}}\\log r_{t,i}$",
+      "short": "The identity $\\log(x^a)=a\\log x$ gives $\\log(r_{t,i}^{1/p_{t,i}})=(1/p_{t,i})\\log r_{t,i}$.",
+      "details": "Here $r_{t,i}>0$, so its logarithm is defined, and $p_{t,i}>0$, so the real exponent $1/p_{t,i}$ is finite. The equality is applied separately to every candidate score inside the same $\\argmax$.",
+      "background": [
+        "argmax"
+      ]
+    },
+    {
+      "id": "derivation_fraction_form",
+      "kind": "equation",
+      "label": "$\\argmax_{i:p_{t,i}>0}\\frac{\\log r_{t,i}}{p_{t,i}}$",
+      "short": "The factor $(1/p_{t,i})\\log r_{t,i}$ is algebraically the same as $\\log r_{t,i}/p_{t,i}$.",
+      "details": "This line only rewrites multiplication by the reciprocal: $a(1/b)=a/b$ for $b\\ne0$. The candidate set already requires $p_{t,i}>0$, so division by $p_{t,i}$ is valid.",
+      "background": [
+        "argmax"
+      ]
+    },
+    {
+      "id": "derivation_sign_reversal",
+      "kind": "equation",
+      "label": "$\\argmin_{i:p_{t,i}>0}\\frac{-\\log r_{t,i}}{p_{t,i}}$",
+      "short": "Multiplying every objective value by $-1$ reverses its ordering, so maximizing $\\log r_{t,i}/p_{t,i}$ is equivalent to minimizing $-\\log r_{t,i}/p_{t,i}$.",
+      "details": "If $f_i\\ge f_j$, then $-f_i\\le-f_j$; therefore $\\argmax_i f_i=\\argmin_i(-f_i)$, including the same tie set. The next proof interprets the resulting auxiliary variable using the standard exponential-race analogy.",
+      "background": [
+        "argmax",
+        "exponential_race"
+      ]
+    },
+    {
+      "id": "unbiasedness",
+      "kind": "equation",
+      "label": "$\\Pr(w_t=i\\mid\\mathbf p_t)=p_{t,i}$",
+      "short": "Conditioned on $\\mathbf p_t$, candidate $i$ is emitted with probability $p_{t,i}$.",
+      "details": "Averaging over the hidden pseudorandomness recovers the language model's intended next-token distribution exactly. The watermark changes the coupling, not this marginal.",
+      "background": [
+        "exponential_race"
+      ]
+    },
+    {
+      "id": "gumbel_distribution",
+      "kind": "concept",
+      "label": "Gumbel distribution",
+      "short": "A Gumbel distribution is a continuous probability distribution on the real line, often associated with random maxima.",
+      "details": "This tutorial uses the standard Gumbel distribution with CDF $\\Pr(G\\le g)=e^{-e^{-g}}$. One independent Gumbel noise value is assigned to each candidate so that adding the noise to $\\log p_{t,i}$ turns an argmax into an exact categorical sample.",
+      "background": [
+        "Gumbel",
+        "CDF"
+      ]
+    },
+    {
+      "id": "gumbel_max_sampler",
+      "kind": "concept",
+      "label": "Gumbel-max sampler",
+      "short": "The Gumbel-max sampler draws from categorical probabilities by adding independent standard Gumbel noise to each log-probability and taking the largest score.",
+      "details": "For candidate probabilities $p_{t,i}$, it returns $\\argmax_i(\\log p_{t,i}+G_{t,i})$, where the $G_{t,i}$ are independent standard Gumbel variables. Candidate $i$ wins with probability exactly $p_{t,i}$; in this watermark, keyed uniform values generate reproducible Gumbel noise.",
+      "background": [
+        "Gumbel",
+        "CDF",
+        "argmax"
+      ]
+    },
+    {
+      "id": "gumbel_noise",
+      "kind": "symbol",
+      "label": "$G_{t,i}=-\\log(-\\log r_{t,i})$",
+      "short": "$G_{t,i}=-\\log(-\\log r_{t,i})$ transforms a uniform value into standard Gumbel noise.",
+      "details": "Its cumulative distribution is $\\Pr(G_{t,i}\\le g)=e^{-e^{-g}}$. Adding it to $\\log p_{t,i}$ gives the classical additive Gumbel-max rule.",
+      "background": [
+        "Uniform",
+        "Gumbel",
+        "CDF"
+      ]
+    },
+    {
+      "id": "race_time",
+      "kind": "symbol",
+      "label": "$X_{t,i}$",
+      "short": "$X_{t,i}:=(-\\log r_{t,i})/p_{t,i}$ is an auxiliary score used to express token selection as a minimization.",
+      "details": "When $r_{t,i}$ behaves as a uniform random value, $X_{t,i}$ has an exponential distribution with rate $p_{t,i}$. The generator selects the candidate with the smallest $X_{t,i}$; this minimum construction is known as an exponential race.",
+      "background": [
+        "Exp",
+        "exponential_race"
+      ]
+    },
+    {
+      "id": "unit_exponential_transform",
+      "kind": "equation",
+      "label": "$-\\log r_{t,i}\\sim\\Exp(\\text{rate}=1)$",
+      "short": "Taking the negative logarithm of $r_{t,i}\\sim\\mathrm{Uniform}(0,1)$ produces an exponential variable with rate $1$.",
+      "details": "The proof computes the survival function: for $x\\ge0$, $\\Pr(-\\log r_{t,i}>x)=\\Pr(r_{t,i}<e^{-x})=e^{-x}$. This matches $\\mathrm{Exp}(\\text{rate}=1)$.",
+      "background": [
+        "Uniform",
+        "Exp"
+      ]
+    },
+    {
+      "id": "exponential_distribution_concept",
+      "kind": "concept",
+      "label": "exponential distribution",
+      "short": "An exponential distribution is a continuous probability distribution on the nonnegative real numbers, controlled by a positive rate parameter.",
+      "details": "With rate $\\lambda>0$, its density is $f_Y(x)=\\lambda e^{-\\lambda x}$ and its survival function is $\\Pr(Y>x)=e^{-\\lambda x}$ for $x\\ge0$. Its mean is $1/\\lambda$.",
+      "background": [
+        "Exp"
+      ]
+    },
+    {
+      "id": "exponential_distribution_survival",
+      "kind": "equation",
+      "label": "$f_Y(x)=\\lambda e^{-\\lambda x},\\quad \\Pr(Y>x)=e^{-\\lambda x}$",
+      "short": "These are the density and survival function of an exponential variable with rate $\\lambda$.",
+      "details": "The survival function is the probability of exceeding $x$. Integrating the density from $x$ to infinity gives $\\int_x^\\infty \\lambda e^{-\\lambda u}\\,du=e^{-\\lambda x}$.",
+      "background": [
+        "Exp"
+      ]
+    },
+    {
+      "id": "unit_exponential_variable",
+      "kind": "symbol",
+      "label": "$Y_{t,i}:=-\\log r_{t,i}$",
+      "short": "$Y_{t,i}$ abbreviates the transformed uniform value $-\\log r_{t,i}$.",
+      "details": "Because $r_{t,i}\\in(0,1)$, its logarithm is negative and $Y_{t,i}\\ge0$, matching the support of an exponential distribution.",
+      "background": [
+        "Exp"
+      ]
+    },
+    {
+      "id": "unit_exp_substitution",
+      "kind": "equation",
+      "label": "$\\Pr(-\\log r_{t,i}>x)$",
+      "short": "Substitute the definition $Y_{t,i}=-\\log r_{t,i}$ into the tail event $Y_{t,i}>x$.",
+      "details": "This changes only the notation inside the probability; it does not alter the event or its probability.",
+      "background": [
+        "Exp"
+      ]
+    },
+    {
+      "id": "unit_exp_sign_reversal",
+      "kind": "equation",
+      "label": "$\\Pr(\\log r_{t,i}<-x)$",
+      "short": "Multiplying $-\\log r_{t,i}>x$ by $-1$ reverses the inequality, giving $\\log r_{t,i}<-x$.",
+      "details": "For real numbers, multiplying both sides of an inequality by a negative value reverses its direction.",
+      "background": []
+    },
+    {
+      "id": "unit_exp_monotone_exponential",
+      "kind": "equation",
+      "label": "$\\Pr(r_{t,i}<e^{-x})$",
+      "short": "Exponentiating preserves the inequality because $e^z$ is strictly increasing.",
+      "details": "The event $\\log r_{t,i}<-x$ is equivalent to $e^{\\log r_{t,i}}<e^{-x}$, and $e^{\\log r_{t,i}}=r_{t,i}$ because $r_{t,i}>0$.",
+      "background": []
+    },
+    {
+      "id": "unit_exp_uniform_cdf",
+      "kind": "equation",
+      "label": "$e^{-x}$",
+      "short": "Since $r_{t,i}$ is uniform on $(0,1)$, $\\Pr(r_{t,i}<u)=u$ for $0\\le u\\le1$.",
+      "details": "For $x\\ge0$, the threshold $u=e^{-x}$ lies in $(0,1]$, so $\\Pr(r_{t,i}<e^{-x})=e^{-x}$. Strict and non-strict inequalities have the same probability because the uniform distribution is continuous.",
+      "background": [
+        "Uniform"
+      ]
+    },
+    {
+      "id": "race_distribution",
+      "kind": "equation",
+      "label": "$X_{t,i}\\sim\\Exp(\\text{rate}=p_{t,i})$",
+      "short": "$X_{t,i}$ is exponential with rate $p_{t,i}$.",
+      "details": "Because $-\\log r_{t,i}\\sim\\Exp(1)$, division by $p_{t,i}$ changes the rate to $p_{t,i}$ and the mean to $1/p_{t,i}$.",
+      "background": [
+        "Exp"
+      ]
+    },
+    {
+      "id": "exponential_race",
+      "kind": "equation",
+      "label": "$\\Pr(X_{t,i}=\\min_jX_{t,j})=p_{t,i}$",
+      "short": "Candidate $i$ has the smallest auxiliary value $X_{t,i}$ with probability $p_{t,i}$.",
+      "details": "For independent exponential variables, the probability that variable $i$ is the minimum equals its rate divided by the sum of all rates. Here the rates are $p_{t,i}$ and $\\sum_jp_{t,j}=1$, so the probability is exactly $p_{t,i}$.",
+      "background": [
+        "Exp",
+        "exponential_race"
+      ]
+    },
+    {
+      "id": "exponential_race_concept",
+      "kind": "concept",
+      "label": "exponential race",
+      "short": "An exponential race selects the minimum among several independent exponential variables.",
+      "details": "Assigning candidate $i$ the exponential rate $p_{t,i}$ makes its probability of attaining the minimum equal to the desired categorical probability $p_{t,i}$.",
+      "background": [
+        "Exp",
+        "exponential_race"
+      ]
+    },
+    {
+      "id": "null_hypothesis",
+      "kind": "notation",
+      "label": "$H_0$",
+      "short": "$H_0$ says the observed text is independent of the secret pseudorandom values.",
+      "details": "It includes human text and ordinary unwatermarked model output when their token choices are independent of the secret pseudorandom values.",
+      "background": []
+    },
+    {
+      "id": "watermarked_hypothesis",
+      "kind": "notation",
+      "label": "$H_1$",
+      "short": "$H_1$ says the text was generated by the keyed Gumbel-max watermark.",
+      "details": "Under this alternative, selected token indices are positively coupled to the secret pseudorandom values.",
+      "background": []
+    },
+    {
+      "id": "null_selected_value_distribution",
+      "kind": "equation",
+      "label": "$r_{t,w_t}\\sim\\mathrm U(0,1)$",
+      "short": "Under $H_0$, the selected keyed value is uniform on $(0,1)$.",
+      "details": "The observed token is independent of the secret pseudorandom values under the ideal null, so selecting coordinate $w_t$ does not bias $r_{t,w_t}$.",
+      "background": [
+        "Uniform"
+      ]
+    },
+    {
+      "id": "alternative_selected_value_cdf",
+      "kind": "equation",
+      "label": "$\\Pr_1(r_{t,w_t}\\le x\\mid\\mathbf p_t)=\\sum_i p_{t,i}x^{1/p_{t,i}}$",
+      "short": "This is the conditional CDF of the selected keyed value under watermarking.",
+      "details": "The mixture $\\sum_i p_{t,i}x^{1/p_{t,i}}$ lies below the uniform CDF $x$ on $(0,1)$, so $r_{t,w_t}$ is stochastically shifted toward one.",
+      "background": [
+        "Uniform"
+      ]
+    },
+    {
+      "id": "aaronson_token_score",
+      "kind": "symbol",
+      "label": "$Z_t=-\\log(1-r_{t,w_t})$",
+      "short": "$Z_t=-\\log(1-r_{t,w_t})$ converts a selected value near one into a large positive score.",
+      "details": "Under the ideal null, $Z_t\\sim\\Exp(1)$; watermarking tends to increase it because the selected $r_{t,w_t}$ is biased upward.",
+      "background": [
+        "Exp",
+        "Uniform"
+      ]
+    },
+    {
+      "id": "aggregate_score",
+      "kind": "symbol",
+      "label": "$S_T=\\sum_{t=1}^{T}-\\log(1-r_{t,w_t})$",
+      "short": "$S_T$ sums the per-token evidence over $T$ scored positions.",
+      "details": "Large values favor the watermarked alternative. Its Gamma null distribution requires the effective scored positions to be independent under $H_0$.",
+      "background": [
+        "Gamma"
+      ]
+    },
+    {
+      "id": "gamma_null",
+      "kind": "equation",
+      "label": "$S_T\\sim\\Gam(\\text{shape}=T,\\text{rate}=1)$",
+      "short": "Under independent effective positions, $S_T$ has a Gamma distribution with shape $T$ and rate one.",
+      "details": "It is the sum of $T$ independent $\\Exp(1)$ scores, so its null mean and variance are both $T$. Repeated-context or pseudorandom collisions can violate this independence, in which case the Gamma null distribution need not apply.",
+      "background": [
+        "Gamma",
+        "Exp"
+      ]
+    },
+    {
+      "id": "gamma_percentile_example",
+      "kind": "notation",
+      "label": "$\\Gam(100,1)$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Gamma"
+      ]
+    },
+    {
+      "id": "beta_conditional_cdf",
+      "kind": "notation",
+      "label": "$\\Beta(1/p_{t,i},1)$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Beta"
+      ]
+    },
+    {
+      "id": "beta_equal_likelihood",
+      "kind": "notation",
+      "label": "$r_{t,w_t}\\sim\\Beta(m,1)$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Beta"
+      ]
+    },
+    {
+      "id": "uniform_ideal_model",
+      "kind": "notation",
+      "label": "$\\mathrm U(0,1)$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Uniform"
+      ]
+    },
+    {
+      "id": "one_sided_p_value",
+      "kind": "concept",
+      "label": "one-sided p-value",
+      "short": "The p-value is the null probability of obtaining a score at least as large as the observed one.",
+      "details": "Here it is $\\Pr_{H_0}(S_T\\ge S_T^{\\rm obs})$ because unusually large scores are evidence for watermarking.",
+      "background": [
+        "p_value"
+      ]
+    }
+  ]
+}

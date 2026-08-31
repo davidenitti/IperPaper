@@ -1,0 +1,1221 @@
+{
+  "title": "Mastering Diverse Domains through World Models",
+  "annotations": [
+    {
+      "id": "dreamerv3",
+      "kind": "concept",
+      "label": "DreamerV3",
+      "short": "The third generation of Dreamer, designed to learn across diverse domains with one fixed configuration.",
+      "details": "DreamerV3 jointly trains a latent world model, critic, and actor. Its normalization, balancing, and transformed prediction losses are intended to remain stable across differing observation, reward, and action regimes.",
+      "background": [
+        "ModelBasedRL"
+      ]
+    },
+    {
+      "id": "world_model",
+      "kind": "concept",
+      "label": "World model",
+      "short": "A learned model that compresses observations and predicts future latent states, rewards, and continuation.",
+      "details": "Dreamer's world model is an RSSM trained from replayed experience. It supplies imagined trajectories on which the actor and critic learn without further environment interaction.",
+      "background": [
+        "WorldModel",
+        "RSSM"
+      ]
+    },
+    {
+      "id": "critic",
+      "kind": "concept",
+      "label": "Critic",
+      "short": "A network that predicts a distribution over returns for each model state.",
+      "details": "The critic is parameterized by $\\psi$ and trained on bootstrapped $\\lambda$-return targets. Its expected prediction supplies values for bootstrapping and the actor's advantage estimate.",
+      "background": [
+        "ActorCritic",
+        "Categorical",
+        "NLL"
+      ]
+    },
+    {
+      "id": "actor",
+      "kind": "concept",
+      "label": "Actor",
+      "short": "A policy network that samples actions to maximize return while retaining entropy for exploration.",
+      "details": "The actor is parameterized by $\\theta$ and trained on imagined model states using a REINFORCE surrogate. Percentile return normalization lets its fixed entropy coefficient work across reward scales.",
+      "background": [
+        "ActorCritic",
+        "Policy",
+        "REINFORCE",
+        "Entropy",
+        "Percentile"
+      ]
+    },
+    {
+      "id": "rssm",
+      "kind": "concept",
+      "label": "RSSM",
+      "short": "The Recurrent State-Space Model used as Dreamer's latent world model.",
+      "details": "The RSSM combines a deterministic recurrent state $h_t$ with a stochastic state $z_t$. Together they summarize history while supporting fast latent predictions for imagination.",
+      "background": [
+        "RSSM"
+      ]
+    },
+    {
+      "id": "observation_xt",
+      "kind": "symbol",
+      "label": "$x_t$",
+      "short": "The sensory observation $x_t$ received at time $t$.",
+      "details": "It can be an image or a vector depending on the domain. The encoder maps $x_t$ to $z_t$, and the decoder reconstructs it as $\\hat{x}_t$ to keep the representation informative.",
+      "background": []
+    },
+    {
+      "id": "stochastic_state_zt",
+      "kind": "symbol",
+      "label": "$z_t$",
+      "short": "The sampled stochastic latent representation $z_t$ at time $t$.",
+      "details": "The encoder samples $z_t$ from $q_\\phi(z_t \\mid h_t,x_t)$. Concatenated with $h_t$, it forms the model state used by prediction heads and behavior learning.",
+      "background": []
+    },
+    {
+      "id": "recurrent_state_ht",
+      "kind": "symbol",
+      "label": "$h_t$",
+      "short": "The deterministic recurrent state $h_t$ of the RSSM at time $t$.",
+      "details": "The sequence model updates $h_t$ from $h_{t-1}$, $z_{t-1}$, and $a_{t-1}$. It carries temporal context needed to predict the next latent state.",
+      "background": []
+    },
+    {
+      "id": "action_at",
+      "kind": "symbol",
+      "label": "$a_t$",
+      "short": "The action $a_t$ selected at time $t$.",
+      "details": "The actor samples $a_t$ from $\\pi_\\theta(a_t \\mid s_t)$. This current action determines the next transition in both imagined rollouts and environment interaction.",
+      "background": []
+    },
+    {
+      "id": "previous_action_atm1",
+      "kind": "symbol",
+      "label": "$a_{t-1}$",
+      "short": "The previous action $a_{t-1}$, taken at time $t-1$.",
+      "details": "The RSSM uses $a_{t-1}$ together with $h_{t-1}$ and $z_{t-1}$ to compute $h_t$. It is the one-step-lagged action, not the action $a_t$ selected at time $t$.",
+      "background": []
+    },
+    {
+      "id": "model_state_st",
+      "kind": "notation",
+      "label": "$s_t \\doteq \\{h_t,z_t\\}$",
+      "short": "The model state supplied to Dreamer's actor and critic.",
+      "details": "The model state is $s_t \\doteq \\{h_t,z_t\\}$, combining deterministic memory $h_t$ and stochastic representation $z_t$. The paper treats it as Markovian enough for value prediction and policy learning.",
+      "background": []
+    },
+    {
+      "id": "reward_rt",
+      "kind": "symbol",
+      "label": "$r_t$",
+      "short": "The scalar reward $r_t$ associated with time $t$.",
+      "details": "The world model predicts $r_t$ for imagined states. It enters both the discounted return $R_t$ and recursive $\\lambda$-return target $R_t^\\lambda$.",
+      "background": []
+    },
+    {
+      "id": "continuation_ct",
+      "kind": "symbol",
+      "label": "$c_t$",
+      "short": "The binary continuation flag $c_t \\in \\{0,1\\}$ after time $t$.",
+      "details": "$c_t$ gates future value in the $\\lambda$-return recursion. Dreamer's continuation head predicts it from the latent model state.",
+      "background": [
+        "Bernoulli"
+      ]
+    },
+    {
+      "id": "sequence_model_fphi",
+      "kind": "operator",
+      "label": "$f_\\phi(h_{t-1},z_{t-1},a_{t-1})$",
+      "short": "The recurrent transition $f_\\phi$ that computes $h_t$.",
+      "details": "$f_\\phi(h_{t-1},z_{t-1},a_{t-1})$ maps the preceding state and action to $h_t$. Its parameters belong to the world-model parameter set $\\phi$.",
+      "background": []
+    },
+    {
+      "id": "encoder_qphi",
+      "kind": "notation",
+      "label": "$q_\\phi(z_t \\mid h_t,x_t)$",
+      "short": "The encoder distribution $q_\\phi(z_t \\mid h_t,x_t)$ over the current latent state.",
+      "details": "This posterior-like distribution conditions on recurrent context $h_t$ and observation $x_t$. Its samples train representations and provide targets for latent dynamics.",
+      "background": [
+        "Categorical"
+      ]
+    },
+    {
+      "id": "predicted_latent_zhat",
+      "kind": "symbol",
+      "label": "$\\hat z_t$",
+      "short": "A stochastic latent state predicted from recurrent context alone.",
+      "details": "During imagination, $\\hat z_t$ is sampled from $p_\\phi(\\hat z_t \\mid h_t)$ without access to $x_t$. The dynamics loss aligns this predictor with encoder representations.",
+      "background": [
+        "Categorical"
+      ]
+    },
+    {
+      "id": "predicted_reward_rhat",
+      "kind": "symbol",
+      "label": "$\\hat r_t$",
+      "short": "The reward predicted by the world model at time t.",
+      "details": "$\\hat r_t$ is sampled from $p_\\phi(\\hat r_t \\mid h_t,z_t)$. These predictions provide imagined rewards for actor–critic learning.",
+      "background": [
+        "Categorical",
+        "Symexp",
+        "Twohot"
+      ]
+    },
+    {
+      "id": "predicted_continue_chat",
+      "kind": "symbol",
+      "label": "$\\hat c_t$",
+      "short": "The predicted episode-continuation flag.",
+      "details": "$\\hat c_t$ estimates whether an imagined trajectory remains nonterminal. It is trained by logistic regression and gates discounted future value.",
+      "background": [
+        "Bernoulli",
+        "LogisticRegression"
+      ]
+    },
+    {
+      "id": "reconstructed_observation_xhat",
+      "kind": "symbol",
+      "label": "$\\hat x_t$",
+      "short": "The decoder reconstruction $\\hat x_t$ of observation $x_t$.",
+      "details": "Reconstruction forces the latent state to preserve information about sensory inputs. Image and vector observations use different encoder/decoder architectures in the implementation.",
+      "background": []
+    },
+    {
+      "id": "dynamics_distribution_pphi",
+      "kind": "notation",
+      "label": "$p_\\phi(\\hat z_t \\mid h_t)$",
+      "short": "$p_\\phi(\\hat z_t \\mid h_t)$ predicts the next stochastic latent from recurrent state $h_t$.",
+      "details": "This dynamics head generates $\\hat z_t$ without observing $x_t$, enabling open-loop imagination. Its KL objective aligns it with encoder distribution $q_\\phi(z_t \\mid h_t,x_t)$.",
+      "background": [
+        "KL",
+        "Categorical"
+      ]
+    },
+    {
+      "id": "reward_distribution_pphi",
+      "kind": "notation",
+      "label": "$p_\\phi(\\hat r_t \\mid h_t,z_t)$",
+      "short": "$p_\\phi(\\hat r_t \\mid h_t,z_t)$ predicts reward from the current latent model state.",
+      "details": "This reward head supplies imagined rewards to the actor and critic. It is trained against replay reward $r_t$ using the robust prediction loss.",
+      "background": [
+        "NLL",
+        "Categorical",
+        "Softmax"
+      ]
+    },
+    {
+      "id": "continue_distribution_pphi",
+      "kind": "notation",
+      "label": "$p_\\phi(\\hat c_t \\mid h_t,z_t)$",
+      "short": "$p_\\phi(\\hat c_t \\mid h_t,z_t)$ predicts whether an imagined episode continues.",
+      "details": "This Bernoulli-style head estimates continuation $\\hat c_t$ from the current model state. Its output gates discounted future value in imagined trajectories.",
+      "background": [
+        "Bernoulli"
+      ]
+    },
+    {
+      "id": "decoder_distribution_pphi",
+      "kind": "notation",
+      "label": "$p_\\phi(\\hat x_t \\mid h_t,z_t)$",
+      "short": "$p_\\phi(\\hat x_t \\mid h_t,z_t)$ reconstructs the sensory observation.",
+      "details": "The decoder head makes the latent state retain information about $x_t$. It uses convolutional decoding for images and an MLP for vector observations.",
+      "background": [
+        "NLL"
+      ]
+    },
+    {
+      "id": "straight_through_gradient",
+      "kind": "concept",
+      "label": "Straight-through gradient",
+      "short": "A gradient estimator used to train through discrete latent samples.",
+      "details": "The forward pass samples categorical representations, while the backward pass uses a differentiable surrogate. This lets encoder and predictor networks receive gradients despite discrete sampling.",
+      "background": [
+        "Gradient"
+      ]
+    },
+    {
+      "id": "world_model_objective",
+      "kind": "equation",
+      "label": "$\\mathcal L$",
+      "short": "The total expected world-model training objective.",
+      "details": "It sums $\\mathcal L_{\\mathrm{pred}}$, $\\mathcal L_{\\mathrm{dyn}}$, and $\\mathcal L_{\\mathrm{rep}}$ across a sequence and averages under encoder samples $q_\\phi$. Fixed $\\beta$ coefficients balance the three terms.",
+      "background": [
+        "KL",
+        "NLL"
+      ]
+    },
+    {
+      "id": "prediction_weight_beta",
+      "kind": "symbol",
+      "label": "$\\beta_{\\mathrm{pred}}$",
+      "short": "$\\beta_{\\mathrm{pred}}=1$ weights the world model's prediction loss.",
+      "details": "It scales $\\mathcal L_{\\mathrm{pred}}$, which trains observation reconstruction plus reward and continuation prediction. Its fixed value is part of DreamerV3's cross-domain configuration.",
+      "background": [
+        "NLL"
+      ]
+    },
+    {
+      "id": "dynamics_weight_beta",
+      "kind": "symbol",
+      "label": "$\\beta_{\\mathrm{dyn}}$",
+      "short": "$\\beta_{\\mathrm{dyn}}=1$ weights the latent dynamics loss.",
+      "details": "It scales $\\mathcal L_{\\mathrm{dyn}}$, whose gradient trains the dynamics predictor toward the stopped encoder distribution.",
+      "background": [
+        "KL"
+      ]
+    },
+    {
+      "id": "representation_weight_beta",
+      "kind": "symbol",
+      "label": "$\\beta_{\\mathrm{rep}}$",
+      "short": "$\\beta_{\\mathrm{rep}}=0.1$ weights the representation regularizer.",
+      "details": "It scales $\\mathcal L_{\\mathrm{rep}}$ more weakly than the other world-model terms, encouraging predictable latents without discarding task-relevant detail.",
+      "background": [
+        "KL"
+      ]
+    },
+    {
+      "id": "prediction_loss",
+      "kind": "equation",
+      "label": "$\\mathcal L_{\\mathrm{pred}}$",
+      "short": "The loss for reconstructing observations and predicting rewards and continuation.",
+      "details": "It sums negative log likelihoods for $x_t$, $r_t$, and $c_t$ under their world-model heads. Its gradients train the decoder and reward/continuation predictors and shape useful representations.",
+      "background": [
+        "NLL"
+      ]
+    },
+    {
+      "id": "dynamics_loss",
+      "kind": "equation",
+      "label": "$\\mathcal L_{\\mathrm{dyn}}$",
+      "short": "The KL loss that trains latent dynamics to predict encoder representations.",
+      "details": "It compares stopped encoder target $q_\\phi(z_t\\mid h_t,x_t)$ with dynamics predictor $p_\\phi(z_t\\mid h_t)$ and applies a one-nat free-bits floor. Its gradients primarily update the predictor.",
+      "background": [
+        "KL"
+      ]
+    },
+    {
+      "id": "representation_loss",
+      "kind": "equation",
+      "label": "$\\mathcal L_{\\mathrm{rep}}$",
+      "short": "The KL loss that makes encoder representations easier for the dynamics model to predict.",
+      "details": "It reverses which side of the KL receives stop-gradient relative to $\\mathcal L_{\\mathrm{dyn}}$ and also uses a one-nat floor. Its smaller global weight helps retain useful input detail.",
+      "background": [
+        "KL"
+      ]
+    },
+    {
+      "id": "kl_divergence",
+      "kind": "operator",
+      "label": "$\\operatorname{KL}$",
+      "short": "A directed discrepancy between two probability distributions.",
+      "details": "Dreamer uses KL divergence to align $q_\\phi(z_t\\mid h_t,x_t)$ with $p_\\phi(z_t\\mid h_t)$. Separate stop-gradient placements split learning pressure between predictor and representation.",
+      "background": [
+        "KL"
+      ]
+    },
+    {
+      "id": "stop_gradient",
+      "kind": "operator",
+      "label": "$\\operatorname{sg}(\\cdot)$",
+      "short": "Returns its input unchanged while blocking gradients through it.",
+      "details": "In the two KL terms, $\\sg(\\cdot)$ chooses whether the encoder distribution or dynamics predictor acts as a fixed target. This balances representation and dynamics learning.",
+      "background": [
+        "StopGradient",
+        "Gradient"
+      ]
+    },
+    {
+      "id": "free_bits",
+      "kind": "concept",
+      "label": "Free bits",
+      "short": "A one-nat floor below which Dreamer's KL terms stop exerting optimization pressure.",
+      "details": "The $\\max(1,\\mathrm{KL})$ construction prevents over-regularizing already compact latent representations. It allows up to one nat of KL divergence without optimization pressure, rather than enforcing the KL to equal one nat.",
+      "background": [
+        "KL"
+      ]
+    },
+    {
+      "id": "observation_nll",
+      "kind": "operator",
+      "label": "$-\\ln p_\\phi(x_t\\mid z_t,h_t)$",
+      "short": "$-\\ln p_\\phi(x_t\\mid z_t,h_t)$ scores the reconstructed observation.",
+      "details": "This term trains the decoder to assign high likelihood to replay observation $x_t$ given latent state $(h_t,z_t)$.",
+      "background": [
+        "NLL"
+      ]
+    },
+    {
+      "id": "reward_nll",
+      "kind": "operator",
+      "label": "$-\\ln p_\\phi(r_t\\mid z_t,h_t)$",
+      "short": "$-\\ln p_\\phi(r_t\\mid z_t,h_t)$ scores the observed reward.",
+      "details": "This term trains the reward head to assign high likelihood to replay reward $r_t$ from latent model state $(h_t,z_t)$.",
+      "background": [
+        "NLL"
+      ]
+    },
+    {
+      "id": "continue_nll",
+      "kind": "operator",
+      "label": "$-\\ln p_\\phi(c_t\\mid z_t,h_t)$",
+      "short": "$-\\ln p_\\phi(c_t\\mid z_t,h_t)$ scores the observed continuation flag.",
+      "details": "This logistic-regression term trains the continuation head on binary target $c_t$, distinguishing terminal from nonterminal transitions.",
+      "background": [
+        "NLL",
+        "Bernoulli",
+        "LogisticRegression"
+      ]
+    },
+    {
+      "id": "discounted_return_Rt",
+      "kind": "notation",
+      "label": "$R_t \\doteq \\sum_{\\tau=0}^{\\infty} \\gamma^\\tau r_{t+\\tau}$",
+      "short": "The infinite-horizon discounted sum of rewards from time t.",
+      "details": "$R_t \\doteq \\sum_{\\tau=0}^{\\infty}\\gamma^\\tau r_{t+\\tau}$ weights each future reward geometrically. The actor maximizes this quantity while the critic models its distribution.",
+      "background": []
+    },
+    {
+      "id": "discount_gamma",
+      "kind": "symbol",
+      "label": "$\\gamma$",
+      "short": "The temporal discount factor $\\gamma=0.997$.",
+      "details": "$\\gamma^\\tau$ reduces the contribution of distant rewards, and $\\gamma c_t$ multiplies bootstrapped future value in the $\\lambda$-return.",
+      "background": []
+    },
+    {
+      "id": "actor_policy_pi",
+      "kind": "notation",
+      "label": "$\\pi_\\theta(a_t\\mid s_t)$",
+      "short": "The actor's conditional action distribution.",
+      "details": "$\\pi_\\theta(a_t\\mid s_t)$ maps latent state $s_t$ to a discrete or continuous action distribution. Actions are sampled from it during imagination and environment interaction.",
+      "background": [
+        "Policy"
+      ]
+    },
+    {
+      "id": "critic_distribution_v",
+      "kind": "notation",
+      "label": "$v_\\psi(R_t\\mid s_t)$",
+      "short": "The critic's categorical distribution over returns conditioned on state.",
+      "details": "$v_\\psi(R_t\\mid s_t)$ is categorical over exponentially spaced return bins. Its expectation is $v_t$, and its likelihood at $R_t^\\lambda$ defines the critic loss.",
+      "background": [
+        "Categorical"
+      ]
+    },
+    {
+      "id": "critic_value_vt",
+      "kind": "symbol",
+      "label": "$v_t$",
+      "short": "The expected return $v_t$ read from the critic distribution at state $s_t$.",
+      "details": "$v_t\\doteq\\operatorname E[v_\\psi(\\cdot\\mid s_t)]$ bootstraps $\\lambda$-returns and serves as the actor's baseline. Its units match return units.",
+      "background": [
+        "Expectation"
+      ]
+    },
+    {
+      "id": "lambda_return",
+      "kind": "concept",
+      "label": "Bootstrapped lambda-return",
+      "short": "A target mixing reward $r_t$, critic value $v_t$, and recursively estimated future return.",
+      "details": "$\\lambda$ interpolates between one-step value bootstrapping and longer-horizon returns, incorporating rewards beyond Dreamer's finite imagination horizon.",
+      "background": []
+    },
+    {
+      "id": "critic_objective",
+      "kind": "equation",
+      "label": "$\\mathcal L$",
+      "short": "The critic's negative log-likelihood objective over lambda-return targets.",
+      "details": "It sums $\\log p_\\psi(R_t^\\lambda\\mid s_t)$ over imagined states. Minimizing its negative fits the full categorical return distribution, not only its mean.",
+      "background": [
+        "NLL"
+      ]
+    },
+    {
+      "id": "critic_log_likelihood",
+      "kind": "notation",
+      "label": "$\\log p_\\psi(R_t^\\lambda\\mid s_t)$",
+      "short": "The critic log probability $\\log p_\\psi(R_t^\\lambda\\mid s_t)$ assigned to a $\\lambda$-return target.",
+      "details": "The negative sum of these terms trains the critic distribution. In the implementation, continuous returns are represented by soft labels over transformed categorical bins.",
+      "background": [
+        "NLL"
+      ]
+    },
+    {
+      "id": "lambda_return_symbol",
+      "kind": "symbol",
+      "label": "$R_t^\\lambda$",
+      "short": "The $\\lambda$-return target $R_t^\\lambda$ at time $t$.",
+      "details": "$R_t^\\lambda$ combines $r_t$ with a continuation-gated mixture of $v_t$ and $R_{t+1}^\\lambda$. At horizon $T$, $R_T^\\lambda\\doteq v_T$.",
+      "background": []
+    },
+    {
+      "id": "lambda_parameter",
+      "kind": "symbol",
+      "label": "$\\lambda$",
+      "short": "The mixing coefficient in the recursive lambda-return.",
+      "details": "The factor $1-\\lambda$ weights direct critic bootstrapping, while $\\lambda$ weights $R_{t+1}^\\lambda$. It controls target horizon and the bias–variance tradeoff.",
+      "background": []
+    },
+    {
+      "id": "entropy_regularization",
+      "kind": "concept",
+      "label": "Entropy regularization",
+      "short": "An exploration bonus that favors less concentrated action distributions.",
+      "details": "Dreamer's actor includes $\\eta\\,\\mathrm H[\\pi_\\theta(a_t\\mid s_t)]$ as a bonus inside the negated return-maximization surrogate, so greater policy entropy lowers the minimized loss. Return normalization keeps this bonus meaningful across reward scales.",
+      "background": [
+        "Entropy"
+      ]
+    },
+    {
+      "id": "entropy_scale_eta",
+      "kind": "symbol",
+      "label": "$\\eta$",
+      "short": "The fixed policy-entropy coefficient $\\eta=3\\times10^{-4}$.",
+      "details": "$\\eta$ controls exploration relative to the return-seeking term. Percentile normalization allows one value to be reused across domains.",
+      "background": [
+        "Entropy"
+      ]
+    },
+    {
+      "id": "return_range_S",
+      "kind": "symbol",
+      "label": "$S$",
+      "short": "A robust running scale estimate $S$ for $\\lambda$-returns.",
+      "details": "$S$ is an EMA of the 95th-minus-5th percentile range. Dividing by $\\max(1,S)$ scales down large advantages without amplifying small sparse-reward signals.",
+      "background": [
+        "EMA",
+        "Percentile"
+      ]
+    },
+    {
+      "id": "reinforce_estimator",
+      "kind": "concept",
+      "label": "REINFORCE estimator",
+      "short": "A score-function gradient estimator for stochastic policies.",
+      "details": "It weights log policy probability by a stopped-gradient normalized advantage. Dreamer uses the same estimator for discrete and continuous actions.",
+      "background": [
+        "REINFORCE"
+      ]
+    },
+    {
+      "id": "actor_objective",
+      "kind": "equation",
+      "label": "$\\mathcal L$",
+      "short": "The actor surrogate combining return maximization and entropy exploration.",
+      "details": "The first term is $\\log\\pi_\\theta(a_t\\mid s_t)$ weighted by normalized advantage; the second is $\\eta$-scaled policy entropy. The loss is minimized over actor parameters $\\theta$.",
+      "background": [
+        "REINFORCE",
+        "Entropy"
+      ]
+    },
+    {
+      "id": "normalized_advantage",
+      "kind": "notation",
+      "label": "$\\operatorname{sg}(R_t^\\lambda-v_\\psi(s_t))/\\max(1,S)$",
+      "short": "The stopped advantage $\\sg(R_t^\\lambda-v_\\psi(s_t))/\\max(1,S)$.",
+      "details": "$R_t^\\lambda-v_\\psi(s_t)$ measures whether an imagined outcome exceeds the critic baseline. The robust denominator compares scales without magnifying small noisy returns.",
+      "background": [
+        "REINFORCE"
+      ]
+    },
+    {
+      "id": "policy_entropy",
+      "kind": "operator",
+      "label": "$\\mathrm H[\\pi_\\theta(a_t\\mid s_t)]$",
+      "short": "The entropy of the actor's action distribution at a state.",
+      "details": "Higher $\\mathrm H[\\pi_\\theta(a_t\\mid s_t)]$ indicates a less concentrated policy and encourages exploration. Its coefficient $\\eta$ is fixed across domains.",
+      "background": [
+        "Entropy"
+      ]
+    },
+    {
+      "id": "ema_percentile_range",
+      "kind": "operator",
+      "label": "$\\operatorname{EMA}(\\operatorname{Per}_{95}-\\operatorname{Per}_{5})$",
+      "short": "An exponential moving average of the 95th-to-5th percentile return span.",
+      "details": "Percentiles reduce sensitivity to outliers, and EMA coefficient $0.99$ smooths batch changes. The result is actor return scale $S$.",
+      "background": [
+        "EMA",
+        "Percentile"
+      ]
+    },
+    {
+      "id": "symlog_squared_error",
+      "kind": "concept",
+      "label": "Symlog squared error",
+      "short": "Squared error applied after compressing targets with the symmetric logarithm.",
+      "details": "The network predicts $\\symlog(y)$, and $\\symexp$ maps its output back to the original scale. This reduces gradient sensitivity to magnitude while supporting negative values.",
+      "background": [
+        "Symlog",
+        "Symexp"
+      ]
+    },
+    {
+      "id": "prediction_function_f",
+      "kind": "operator",
+      "label": "$f(x,\\theta)$",
+      "short": "A neural-network output in transformed target space.",
+      "details": "For deterministic regression, $f(x,\\theta)$ approximates $\\symlog(y)$; for categorical regression it supplies logits. $\\theta$ denotes the prediction-network parameters.",
+      "background": [
+        "Symlog",
+        "Logits"
+      ]
+    },
+    {
+      "id": "prediction_target_y",
+      "kind": "symbol",
+      "label": "$y$",
+      "short": "A scalar prediction target such as an observation component, reward, or return.",
+      "details": "Its physical scale depends on the application domain and may span orders of magnitude. Symlog and twohot transformations make learning less sensitive to that scale.",
+      "background": [
+        "Symlog",
+        "Twohot"
+      ]
+    },
+    {
+      "id": "symlog_prediction_yhat",
+      "kind": "symbol",
+      "label": "$\\hat y$",
+      "short": "The symlog-regression prediction $\\hat y$ on the original target scale.",
+      "details": "Here $\\hat y\\doteq\\symexp(f(x,\\theta))$. Applying symexp, the inverse function of symlog, restores the units and scale of target $y$.",
+      "background": [
+        "Symlog",
+        "Symexp"
+      ]
+    },
+    {
+      "id": "twohot_prediction_yhat",
+      "kind": "symbol",
+      "label": "$\\hat y$",
+      "short": "The categorical-bin prediction $\\hat y$ on the original target scale.",
+      "details": "Here $\\hat y\\doteq\\softmax(f(x))^\\mathsf T B$, the probability-weighted mean of symexp-spaced bins. Its units match target $y$.",
+      "background": [
+        "Symexp",
+        "Softmax"
+      ]
+    },
+    {
+      "id": "symlog_objective",
+      "kind": "equation",
+      "label": "$\\mathcal L$",
+      "short": "Half the squared difference between network output and symlog-transformed target.",
+      "details": "The transformation compresses large magnitudes before squared error is applied. Prediction is decoded by applying symexp, the inverse function of symlog.",
+      "background": [
+        "Symlog",
+        "Symexp"
+      ]
+    },
+    {
+      "id": "symlog_operator",
+      "kind": "operator",
+      "label": "$\\operatorname{symlog}$",
+      "short": "The sign-preserving transform $\\symlog(x)\\doteq\\sign(x)\\ln(|x|+1)$.",
+      "details": "It behaves nearly linearly around zero while compressing large positive and negative magnitudes. Dreamer applies it to vector observations and regression targets.",
+      "background": [
+        "Symlog"
+      ]
+    },
+    {
+      "id": "symexp_operator",
+      "kind": "operator",
+      "label": "$\\operatorname{symexp}$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Symexp"
+      ]
+    },
+    {
+      "id": "symexp_twohot",
+      "kind": "concept",
+      "label": "Symexp twohot loss",
+      "short": "Categorical prediction over symexp-spaced bins using two-bin soft targets.",
+      "details": "The critic and reward head use this method for possibly stochastic targets. It decouples gradient scale from numerical target magnitude while retaining continuous-valued readouts.",
+      "background": [
+        "Symexp",
+        "Twohot",
+        "Softmax",
+        "Categorical"
+      ]
+    },
+    {
+      "id": "bin_set_B",
+      "kind": "notation",
+      "label": "$B=\\{b_i\\}$",
+      "short": "The set of exponentially spaced scalar support bins and its individual locations.",
+      "details": "$B$ is obtained by applying $\\symexp$ to values evenly spaced from $-20$ to $+20$. Probability-weighted averaging over $B$ produces continuous prediction $\\hat y$.",
+      "background": [
+        "Symexp"
+      ]
+    },
+    {
+      "id": "softmax_distribution",
+      "kind": "operator",
+      "label": "$\\operatorname{softmax}(f(x))$",
+      "short": "The normalized categorical probabilities $\\softmax(f(x))$ over bin set $B$.",
+      "details": "The network emits logits $f(x)$, and softmax converts them to nonnegative weights summing to one. Their inner product with $B$ is predicted scalar $\\hat y$.",
+      "background": [
+        "Softmax",
+        "Categorical"
+      ]
+    },
+    {
+      "id": "twohot_encoding",
+      "kind": "operator",
+      "label": "$\\operatorname{twohot}(y)$",
+      "short": "The soft categorical encoding $\\twohot(y)$ on the two bins nearest $y$.",
+      "details": "The two nonzero weights sum to one and interpolate linearly according to distance from the neighboring bins. This represents continuous targets without snapping them to one bucket.",
+      "background": [
+        "Twohot",
+        "Softmax",
+        "Categorical"
+      ]
+    },
+    {
+      "id": "twohot_objective",
+      "kind": "equation",
+      "label": "$\\mathcal L$",
+      "short": "Cross entropy between the twohot target and predicted log-softmax probabilities.",
+      "details": "The loss depends on assigned bin probabilities rather than the numerical size of bin locations. This helps stabilize reward and return prediction across domains.",
+      "background": [
+        "Twohot",
+        "NLL",
+        "Softmax",
+        "Categorical"
+      ]
+    },
+    {
+      "id": "log_softmax",
+      "kind": "operator",
+      "label": "$\\operatorname{log\\,softmax}(f(x,\\theta))$",
+      "short": "Log probabilities obtained by normalizing the network logits.",
+      "details": "Taking the inner product with $\\twohot(y)$ selects an interpolated categorical log likelihood. The negative of that quantity is minimized.",
+      "background": [
+        "Softmax",
+        "Twohot"
+      ]
+    },
+    {
+      "id": "cnn",
+      "kind": "concept",
+      "label": "CNN",
+      "short": "",
+      "details": "",
+      "background": [
+        "CNN"
+      ]
+    },
+    {
+      "id": "mlp",
+      "kind": "concept",
+      "label": "MLP",
+      "short": "",
+      "details": "",
+      "background": [
+        "MLP"
+      ]
+    },
+    {
+      "id": "latent_softmax_distribution",
+      "kind": "concept",
+      "label": "Latent categorical distributions",
+      "short": "Each discrete latent factor is sampled from probabilities produced by softmax.",
+      "details": "Dreamer represents the stochastic state as a vector of categorical variables. The 1% uniform mixture prevents any category from receiving exactly zero probability, while the straight-through estimator carries learning signals through samples.",
+      "background": [
+        "Categorical",
+        "Softmax"
+      ]
+    },
+    {
+      "id": "world_model_parameters_phi",
+      "kind": "symbol",
+      "label": "$\\phi$",
+      "short": "$\\phi$ denotes the collective trainable parameters of the world-model components.",
+      "details": "These parameters govern the encoder, recurrent transition, latent dynamics, reward and continuation predictors, and decoder. The objective $\\mathcal L(\\phi)$ updates them jointly.",
+      "background": []
+    },
+    {
+      "id": "expectation_operator",
+      "kind": "operator",
+      "label": "$\\operatorname E$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Expectation"
+      ]
+    },
+    {
+      "id": "critic_parameters_psi",
+      "kind": "symbol",
+      "label": "$\\psi$",
+      "short": "$\\psi$ denotes the critic network's trainable parameters.",
+      "details": "They determine the categorical return distribution $v_\\psi(R_t\\mid s_t)$ and are optimized by the critic negative-log-likelihood objective.",
+      "background": []
+    },
+    {
+      "id": "actor_parameters_theta",
+      "kind": "symbol",
+      "label": "$\\theta$",
+      "short": "$\\theta$ denotes the actor policy's trainable parameters in the actor objective.",
+      "details": "They govern $\\pi_\\theta(a_t\\mid s_t)$ and receive gradients from the normalized REINFORCE term and the entropy bonus. This role is distinct from the later reuse of $\\theta$ for a generic prediction network.",
+      "background": [
+        "REINFORCE"
+      ]
+    },
+    {
+      "id": "prediction_parameters_theta",
+      "kind": "symbol",
+      "label": "$\\theta$",
+      "short": "$\\theta$ denotes the generic prediction network's parameters in the robust-prediction subsection.",
+      "details": "Here it parameterizes $f(x,\\theta)$ for symlog or twohot prediction. It is a local reuse of the glyph $\\theta$, not the actor-specific parameter role used in the preceding subsection.",
+      "background": []
+    },
+    {
+      "id": "normal_distribution",
+      "kind": "concept",
+      "label": "Normal distribution",
+      "short": "",
+      "details": "",
+      "background": [
+        "Normal"
+      ]
+    },
+    {
+      "id": "critic_categorical_distribution",
+      "kind": "concept",
+      "label": "Categorical critic distribution",
+      "short": "Dreamer's critic represents return uncertainty with probabilities over a finite set of transformed bins.",
+      "details": "Unlike a single Normal density, this finite categorical representation can express multiple modes. Symexp-spaced bin locations cover returns with widely different magnitudes.",
+      "background": [
+        "Categorical",
+        "Softmax",
+        "Normal"
+      ]
+    },
+    {
+      "id": "ppo",
+      "kind": "concept",
+      "label": "PPO",
+      "short": "",
+      "details": "",
+      "background": [
+        "PPO"
+      ]
+    },
+    {
+      "id": "replay_ratio",
+      "kind": "concept",
+      "label": "Replay ratio",
+      "short": "The replay ratio measures how many training time steps are consumed per newly collected environment time step, before accounting for action repeat.",
+      "details": "Dividing the replay ratio by the total time steps in a minibatch (batch size times sequence length) and by action repeat gives the number of parameter-update steps per environment step. It controls the trade-off between computation and data efficiency.",
+      "background": []
+    },
+    {
+      "id": "agc",
+      "kind": "concept",
+      "label": "AGC",
+      "short": "",
+      "details": "",
+      "background": [
+        "AGC"
+      ]
+    },
+    {
+      "id": "l2_norm",
+      "kind": "operator",
+      "label": "L2 norm",
+      "short": "",
+      "details": "",
+      "background": [
+        "L2Norm"
+      ]
+    },
+    {
+      "id": "laprop",
+      "kind": "concept",
+      "label": "LaProp",
+      "short": "",
+      "details": "",
+      "background": [
+        "LaProp"
+      ]
+    },
+    {
+      "id": "rmsprop",
+      "kind": "concept",
+      "label": "RMSProp",
+      "short": "",
+      "details": "",
+      "background": [
+        "RMSProp"
+      ]
+    },
+    {
+      "id": "adam",
+      "kind": "concept",
+      "label": "Adam",
+      "short": "",
+      "details": "",
+      "background": [
+        "Adam"
+      ]
+    },
+    {
+      "id": "unimix",
+      "kind": "concept",
+      "label": "One-percent uniform mixture",
+      "short": "Dreamer mixes the encoder, dynamics-predictor, and categorical actor probabilities with 1% uniform probability mass.",
+      "details": "For these distributions, the resulting category probabilities cannot become zero, so sampled categories retain finite log probabilities and the latent KL terms remain bounded. The paper calls this robustness device a unimix in its summary.",
+      "background": [
+        "Categorical",
+        "DiscreteUniform",
+        "Softmax"
+      ]
+    },
+    {
+      "id": "twohot_category_index_i",
+      "kind": "symbol",
+      "label": "$i$",
+      "short": "$i$ selects one component of the twohot target vector.",
+      "details": "Only components at the neighboring-bin indices $k$ and $k+1$ are nonzero; all other components are zero.",
+      "background": []
+    },
+    {
+      "id": "nearest_bin_index_k",
+      "kind": "symbol",
+      "label": "$k$",
+      "short": "$k$ indexes the bin immediately below the scalar target $x$.",
+      "details": "The indicator sum counts bin locations smaller than $x$. The twohot interpolation then assigns mass to bins $b_k$ and $b_{k+1}$.",
+      "background": [
+        "Indicator"
+      ]
+    },
+    {
+      "id": "indicator_operator",
+      "kind": "operator",
+      "label": "$\\operatorname{\\delta}(b_j<x)$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Indicator"
+      ]
+    },
+    {
+      "id": "gru",
+      "kind": "concept",
+      "label": "GRU",
+      "short": "",
+      "details": "",
+      "background": [
+        "GRU"
+      ]
+    },
+    {
+      "id": "kl_balance",
+      "kind": "concept",
+      "label": "KL balance",
+      "short": "KL balance uses two differently stopped KL terms to control learning pressure on the latent predictor and encoder.",
+      "details": "The dynamics loss updates the predictor toward a stopped encoder target, while the representation loss updates the encoder toward a stopped predictor. Separate global weights let Dreamer favor predictive dynamics without collapsing informative representations.",
+      "background": [
+        "KL",
+        "StopGradient"
+      ]
+    },
+    {
+      "id": "rmsnorm",
+      "kind": "concept",
+      "label": "RMSNorm",
+      "short": "",
+      "details": "",
+      "background": [
+        "RMSNorm"
+      ]
+    },
+    {
+      "id": "silu",
+      "kind": "operator",
+      "label": "SiLU activation",
+      "short": "",
+      "details": "",
+      "background": [
+        "SiLU"
+      ]
+    }
+  ],
+  "background": {
+    "KL": {
+      "short": "The Kullback–Leibler (KL) divergence $\\mathrm{KL}(q\\,\\|\\,p)=\\mathbb E_q[\\log q-\\log p]$ measures how much one distribution differs from another.",
+      "details": "It is nonnegative and equals zero only when the two distributions coincide; it is not symmetric. Optimizing a KL term pulls one distribution toward the other, and which side receives the stop-gradient decides which network learns.",
+      "link": "https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence",
+      "background": [
+        "Expectation"
+      ]
+    },
+    "NLL": {
+      "short": "The negative log likelihood $-\\ln p(y)$ scores how surprising an outcome $y$ is under a model.",
+      "details": "Minimizing summed negative log likelihoods is maximum-likelihood training: it pushes probability mass toward observed targets. Lower values mean the model assigns higher probability to the data.",
+      "link": "https://en.wikipedia.org/wiki/Likelihood_function#Log-likelihood"
+    },
+    "Entropy": {
+      "short": "Entropy measures how spread out a distribution is: for discrete actions, $\\mathrm H[P]=-\\sum_a P(a)\\log P(a)$; for a continuous action density $p(a)$, differential entropy is $\\mathrm H[p]=-\\int p(a)\\log p(a)\\,da$.",
+      "details": "Here $a$ denotes an action, $P(a)$ is its probability in the discrete case, and $p(a)$ is its probability density in the continuous case. Higher entropy generally indicates a less concentrated policy. Dreamer's entropy bonus encourages exploration for both discrete and continuous action distributions.",
+      "link": "https://en.wikipedia.org/wiki/Entropy_(information_theory)"
+    },
+    "EMA": {
+      "short": "An exponential moving average (EMA) with decay $\\rho$ updates a running estimate as $\\bar x\\leftarrow\\rho\\bar x+(1-\\rho)x$.",
+      "details": "The paper uses decay $\\rho=0.99$, so the previous estimate receives weight $0.99$ and the current batch statistic receives weight $0.01$. This smooths noisy percentile ranges into a stable running scale.",
+      "link": "https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average"
+    },
+    "REINFORCE": {
+      "short": "REINFORCE is a score-function gradient estimator: $\\nabla_\\theta\\,\\mathbb E[R]\\approx\\mathbb E[\\sg(R)\\,\\nabla_\\theta\\log\\pi_\\theta(a)]$.",
+      "details": "It weights the log probability of sampled actions by the observed return or advantage. The weighting term uses a stop-gradient so gradients flow only through the log-probability factor.",
+      "link": "https://en.wikipedia.org/wiki/Reinforcement_learning#Policy_search",
+      "background": [
+        "Expectation",
+        "Gradient",
+        "PolicyGradient"
+      ]
+    },
+    "Categorical": {
+      "short": "A categorical distribution is a discrete probability distribution on a finite support of $K$ outcomes.",
+      "details": "For support $\\{1,\\ldots,K\\}$ and category probabilities $p_1,\\ldots,p_K$ satisfying $p_i\\ge0$ and $\\sum_{i=1}^K p_i=1$, its probability mass function is $\\Pr(X=i)=p_i$. Neural networks commonly obtain these probabilities from logits using softmax.",
+      "link": "https://en.wikipedia.org/wiki/Categorical_distribution",
+      "background": [
+        "CategoryProbabilities"
+      ]
+    },
+    "Bernoulli": {
+      "short": "A Bernoulli distribution is a discrete probability distribution on the binary support $\\{0,1\\}$.",
+      "details": "With success probability $p\\in[0,1]$, its probability mass function is $\\Pr(X=x)=p^x(1-p)^{1-x}$ for $x\\in\\{0,1\\}$. Its negative log likelihood is binary cross-entropy, the loss used for continuation predictions.",
+      "link": "https://en.wikipedia.org/wiki/Bernoulli_distribution",
+      "background": [
+        "BernoulliParameter"
+      ]
+    },
+    "Softmax": {
+      "short": "The softmax function converts real-valued logits $f_i$ into probabilities $\\softmax(f)_i=e^{f_i}/\\sum_j e^{f_j}$.",
+      "details": "It produces nonnegative weights summing to one over bins or classes. Its logarithm, log-softmax, is numerically stable and appears directly in cross-entropy losses.",
+      "link": "https://en.wikipedia.org/wiki/Softmax_function",
+      "background": [
+        "Logits"
+      ]
+    },
+    "Percentile": {
+      "short": "The $q$th percentile is the value below which approximately $q$ percent of samples fall.",
+      "details": "Ranges such as the 95th-minus-5th percentile measure spread while ignoring extreme outliers, giving robust scale estimates.",
+      "link": "https://en.wikipedia.org/wiki/Percentile",
+      "background": [
+        "PercentileLevel"
+      ]
+    },
+    "Gradient": {
+      "short": "The gradient $\\nabla$ collects partial derivatives and points in the direction of steepest increase.",
+      "details": "A stop-gradient operation returns its input unchanged in the forward pass but blocks gradient flow backward, treating part of the computation as a fixed constant.",
+      "link": "https://en.wikipedia.org/wiki/Gradient"
+    },
+    "Expectation": {
+      "short": "Expectation is the probability-weighted average value of a random variable.",
+      "details": "For discrete outcomes it is a probability-weighted sum; for continuous outcomes it is a density-weighted integral. Dreamer uses expectations both to average training losses over latent samples and to read a scalar value from the critic's return distribution.",
+      "link": "https://en.wikipedia.org/wiki/Expected_value"
+    },
+    "ModelBasedRL": {
+      "label": "Model-based reinforcement learning",
+      "short": "Model-based reinforcement learning learns or uses a model of environment dynamics to improve decisions.",
+      "details": "The model can support planning or generate simulated experience. Dreamer learns a latent dynamics model and trains its actor and critic on trajectories imagined by that model.",
+      "link": "https://en.wikipedia.org/wiki/Reinforcement_learning#Model-based"
+    },
+    "WorldModel": {
+      "label": "World model",
+      "short": "A world model predicts how an environment evolves and what outcomes actions produce.",
+      "details": "A latent world model compresses observations into internal states before predicting transitions, rewards, and termination. This allows behavior learning to operate on compact imagined trajectories.",
+      "link": "https://en.wikipedia.org/wiki/World_models"
+    },
+    "RSSM": {
+      "label": "Recurrent State-Space Model (RSSM)",
+      "short": "An RSSM combines deterministic recurrent memory with stochastic latent state variables.",
+      "details": "The recurrent component carries history, while stochastic states represent uncertainty and new information from observations. Dreamer uses this structure as its latent dynamics model.",
+      "link": "https://arxiv.org/abs/1811.04551"
+    },
+    "CNN": {
+      "label": "Convolutional neural network (CNN)",
+      "short": "A CNN processes grid-structured data such as images using shared local filters.",
+      "details": "Weight sharing makes convolutional layers efficient and translation-aware. Dreamer uses convolutional encoders and decoders for pixel observations.",
+      "link": "https://en.wikipedia.org/wiki/Convolutional_neural_network"
+    },
+    "MLP": {
+      "label": "Multilayer perceptron (MLP)",
+      "short": "An MLP is a feed-forward neural network composed of stacked affine layers and nonlinear activations.",
+      "details": "Dreamer uses MLPs for vector observations, actor and critic networks, and several world-model prediction heads.",
+      "link": "https://en.wikipedia.org/wiki/Multilayer_perceptron"
+    },
+    "Normal": {
+      "label": "Normal distribution",
+      "short": "The Normal distribution is a continuous probability distribution on the real line.",
+      "details": "With mean $\\mu$ and standard deviation $\\sigma>0$, its support is $x\\in\\mathbb R$ and its density is $f_X(x)=\\frac{1}{\\sigma\\sqrt{2\\pi}}\\exp\\!\\left(-\\frac{(x-\\mu)^2}{2\\sigma^2}\\right)$. A single Normal density is unimodal, motivating Dreamer's categorical critic for potentially multimodal returns.",
+      "link": "https://en.wikipedia.org/wiki/Normal_distribution",
+      "background": [
+        "NormalParameters"
+      ]
+    },
+    "NormalParameters": {
+      "label": "Normal-distribution parameters",
+      "short": "In a Normal density, $\\mu$ is the mean, $\\sigma$ is the positive standard deviation, and $x$ is the real-valued outcome.",
+      "details": "The constant $\\pi$ is the circle constant and $\\exp$ is the exponential function. The variance is $\\sigma^2$.",
+      "link": "https://en.wikipedia.org/wiki/Normal_distribution#Definitions"
+    },
+    "CategoryProbabilities": {
+      "label": "Categorical-probability notation",
+      "short": "$K$ is the number of categories, $i$ is a category index, and $p_i$ is the probability assigned to category $i$.",
+      "details": "The probabilities are nonnegative and sum to one. $X$ denotes the sampled categorical random variable.",
+      "link": "https://en.wikipedia.org/wiki/Categorical_distribution#Terminology"
+    },
+    "BernoulliParameter": {
+      "label": "Bernoulli-distribution notation",
+      "short": "$p$ is the probability of outcome $1$, $X$ is the binary random variable, and $x$ is one realized value in $\\{0,1\\}$.",
+      "details": "The complementary probability of outcome $0$ is $1-p$.",
+      "link": "https://en.wikipedia.org/wiki/Bernoulli_distribution#Definition"
+    },
+    "Logits": {
+      "short": "Logits are unconstrained real-valued scores that softmax converts into probabilities.",
+      "details": "Adding the same constant to every logit leaves softmax probabilities unchanged; differences between logits determine relative probability ratios.",
+      "link": "https://en.wikipedia.org/wiki/Logit"
+    },
+    "PercentileLevel": {
+      "label": "Percentile level",
+      "short": "The symbol $q$ specifies the requested percentile or quantile level.",
+      "details": "Depending on convention it is written as a fraction from zero to one or as a percentage from zero to one hundred.",
+      "link": "https://en.wikipedia.org/wiki/Quantile"
+    },
+    "PolicyGradient": {
+      "label": "Policy gradient",
+      "short": "A policy gradient differentiates expected return with respect to the parameters of a stochastic policy.",
+      "details": "Score-function estimators such as REINFORCE use gradients of sampled-action log probabilities, weighted by returns or advantages.",
+      "link": "https://en.wikipedia.org/wiki/Reinforcement_learning#Policy_search"
+    },
+    "PPO": {
+      "label": "Proximal Policy Optimization (PPO)",
+      "short": "PPO is an on-policy reinforcement-learning algorithm that limits how much the policy changes during an update.",
+      "details": "It optimizes a clipped policy-gradient surrogate over recently collected trajectories. This paper uses a strong fixed-hyperparameter PPO implementation as a general baseline.",
+      "link": "https://arxiv.org/abs/1707.06347"
+    },
+    "AGC": {
+      "label": "Adaptive Gradient Clipping (AGC)",
+      "short": "AGC clips a parameter tensor's gradient relative to the norm of that parameter tensor.",
+      "details": "Its threshold adapts to parameter scale, reducing sensitivity to the absolute scale of losses and helping prevent destabilizing updates.",
+      "link": "https://arxiv.org/abs/2102.06171"
+    },
+    "L2Norm": {
+      "label": "L2 norm",
+      "short": "The L2 norm is the square root of the sum of squared components of a vector or flattened tensor.",
+      "details": "It measures Euclidean magnitude. AGC compares a gradient norm with the norm of its corresponding weight tensor.",
+      "link": "https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm"
+    },
+    "LaProp": {
+      "short": "LaProp is an adaptive optimizer that applies RMS-style gradient normalization before momentum.",
+      "details": "This ordering differs from Adam, which accumulates first- and second-moment estimates from raw gradients. The paper reports that LaProp permits a smaller numerical-stability constant.",
+      "link": "https://arxiv.org/abs/2002.04839"
+    },
+    "RMSProp": {
+      "short": "RMSProp rescales gradients using an exponential moving average of their squared magnitudes.",
+      "details": "Coordinates with persistently large gradients receive smaller effective steps. LaProp uses this normalization before applying momentum.",
+      "link": "https://en.wikipedia.org/wiki/Stochastic_gradient_descent#RMSProp"
+    },
+    "Adam": {
+      "short": "Adam is an adaptive optimizer combining momentum-like first moments with second-moment gradient scaling.",
+      "details": "Bias-corrected running estimates determine coordinate-wise update sizes. The paper contrasts its ordering with LaProp's normalize-then-momentum design.",
+      "link": "https://arxiv.org/abs/1412.6980"
+    },
+    "DiscreteUniform": {
+      "label": "Discrete uniform distribution",
+      "short": "A discrete uniform distribution assigns equal probability to every outcome in a finite support.",
+      "details": "For support $\\{1,\\ldots,K\\}$, its probability mass function is $\\Pr(X=i)=1/K$ for every $i$ in the support and zero otherwise. Dreamer's 1% mixture uses this mass to keep all categorical outcomes possible.",
+      "link": "https://en.wikipedia.org/wiki/Discrete_uniform_distribution",
+      "background": [
+        "CategoryProbabilities"
+      ]
+    },
+    "Indicator": {
+      "label": "Indicator function",
+      "short": "An indicator function evaluates to one when its condition is true and zero otherwise.",
+      "details": "Summing indicators counts how many indexed conditions hold. In the twohot definition, the sum counts how many bin locations lie below the target.",
+      "link": "https://en.wikipedia.org/wiki/Indicator_function"
+    },
+    "GRU": {
+      "label": "Gated recurrent unit (GRU)",
+      "short": "A GRU is a recurrent neural-network cell with gates that control memory updates.",
+      "details": "Update and reset gates help it retain useful information across long sequences. Dreamer uses a block-structured GRU for its deterministic recurrent state.",
+      "link": "https://en.wikipedia.org/wiki/Gated_recurrent_unit"
+    },
+    "ActorCritic": {
+      "label": "Actor-critic reinforcement learning",
+      "short": "Actor-critic methods pair an action-selection policy with a value estimator that evaluates the policy's outcomes.",
+      "details": "The actor adjusts behavior using signals derived from the critic, while the critic learns return estimates. Dreamer trains both components from trajectories imagined by its world model.",
+      "link": "https://en.wikipedia.org/wiki/Actor%E2%80%93critic_algorithm"
+    },
+    "Policy": {
+      "label": "Policy",
+      "short": "A policy is a conditional rule or probability distribution for selecting actions from states.",
+      "details": "A stochastic policy assigns probabilities or densities to available actions. Its trainable parameters determine how action selection changes with state.",
+      "link": "https://en.wikipedia.org/wiki/Reinforcement_learning#Policy"
+    },
+    "LogisticRegression": {
+      "label": "Logistic regression",
+      "short": "Logistic regression models a binary outcome using a sigmoid-transformed real-valued score.",
+      "details": "It is trained with Bernoulli negative log likelihood, also called binary cross-entropy. Dreamer uses it for the continuation target.",
+      "link": "https://en.wikipedia.org/wiki/Logistic_regression",
+      "background": [
+        "Bernoulli",
+        "Sigmoid"
+      ]
+    },
+    "StopGradient": {
+      "label": "Stop-gradient operator",
+      "short": "A stop-gradient operator returns the same numerical value but has zero derivative.",
+      "details": "It makes its argument behave as a fixed target during backpropagation. Dreamer places it on opposite sides of two KL terms to route learning pressure separately.",
+      "link": "https://www.tensorflow.org/api_docs/python/tf/stop_gradient"
+    },
+    "Symlog": {
+      "label": "Symmetric logarithm (symlog)",
+      "short": "Symlog is the sign-preserving transform $\\operatorname{symlog}(x)=\\operatorname{sign}(x)\\ln(|x|+1)$.",
+      "details": "It behaves approximately linearly near zero and logarithmically at large magnitudes, supporting both positive and negative targets. Its inverse function is symexp: $\\operatorname{symexp}(\\operatorname{symlog}(x))=x$.",
+      "link": "https://arxiv.org/abs/1209.6017"
+    },
+    "Symexp": {
+      "label": "Symmetric exponential (symexp)",
+      "short": "Symexp is the inverse function of symlog: $\\operatorname{symexp}(x)=\\operatorname{sign}(x)(\\exp(|x|)-1)$.",
+      "details": "It satisfies $\\operatorname{symexp}(\\operatorname{symlog}(y))=y$. Dreamer uses it to map symlog-space predictions back to their original scale and to map uniformly spaced transformed coordinates to exponentially spaced signed bins.",
+      "link": "https://arxiv.org/abs/2301.04104"
+    },
+    "Twohot": {
+      "label": "Two-hot encoding",
+      "short": "Two-hot encoding represents a scalar using nonzero weights on its two neighboring support bins.",
+      "details": "The two weights sum to one and linearly interpolate between bin locations. This creates a soft categorical target while retaining continuous-valued information.",
+      "link": "https://arxiv.org/abs/1707.06887"
+    },
+    "RMSNorm": {
+      "label": "Root Mean Square Layer Normalization (RMSNorm)",
+      "short": "RMSNorm rescales a feature vector by its root-mean-square magnitude.",
+      "details": "Unlike LayerNorm, it does not subtract the feature mean. Learned scale parameters restore per-feature flexibility after normalization.",
+      "link": "https://arxiv.org/abs/1910.07467"
+    },
+    "SiLU": {
+      "label": "Sigmoid Linear Unit (SiLU)",
+      "short": "SiLU is the smooth activation $\\operatorname{SiLU}(x)=x\\,\\sigma(x)$.",
+      "details": "Multiplying the input by its sigmoid gate yields a smooth, non-monotone activation also known as swish.",
+      "link": "https://pytorch.org/docs/stable/generated/torch.nn.SiLU.html",
+      "background": [
+        "Sigmoid"
+      ]
+    },
+    "Sigmoid": {
+      "label": "Logistic sigmoid",
+      "short": "The sigmoid function maps a real input $x$ to $\\sigma(x)=1/(1+e^{-x})$ in the open interval from zero to one.",
+      "details": "It is commonly used as a gate or to parameterize the success probability of a Bernoulli distribution.",
+      "link": "https://en.wikipedia.org/wiki/Sigmoid_function"
+    }
+  }
+}
