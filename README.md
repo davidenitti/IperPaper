@@ -19,13 +19,13 @@ For each paper, IperPaper can add:
 
 ### Tutorial: Gumbel-Max Watermarking
 
-This tutorial was written specifically with IperPaper in mind. It provides a compact example of semantic annotations, explanatory tooltips, and mathematical notation designed for interactive reading. Read it as [PDF-backed HTML](papers/tutorial_gumbel_max_watermarking/tutorial_gumbel_max_watermarking.html) or [native HTML](papers/tutorial_gumbel_max_watermarking/tutorial_gumbel_max_watermarking.native.html).
+This tutorial was written specifically with IperPaper in mind. It provides a compact example of semantic annotations, explanatory tooltips, and mathematical notation designed for interactive reading. Read it as [PDF-backed HTML](https://davidenitti.github.io/IperPaper/papers/tutorial_gumbel_max_watermarking/tutorial_gumbel_max_watermarking.html) or [native HTML](https://davidenitti.github.io/IperPaper/papers/tutorial_gumbel_max_watermarking/tutorial_gumbel_max_watermarking.native.html).
 
 The tutorial's [annotations JSON](papers/tutorial_gumbel_max_watermarking/annotated/tutorial_gumbel_max_watermarking.annotations.json) contains the authored explanations and reusable background entries associated with `\iperpaper` targets in the TeX source. Its [citations JSON](papers/tutorial_gumbel_max_watermarking/annotated/tutorial_gumbel_max_watermarking.citations.json) is the build-maintained cache of bibliography keys, rendered citation numbers, verified metadata, and resolved external links.
 
 ### Mastering Diverse Domains through World Models
 
-This is an existing research paper annotated using IperPaper. It demonstrates how the annotation workflow can be applied to a complete paper while preserving its original structure and content. Read it as [PDF-backed HTML](papers/Mastering%20Diverse%20Domains%20through%20World%20Models/Mastering%20Diverse%20Domains%20through%20World%20Models.html) or [native HTML](papers/Mastering%20Diverse%20Domains%20through%20World%20Models/Mastering%20Diverse%20Domains%20through%20World%20Models.native.html).
+This is an existing research paper annotated using IperPaper. It demonstrates how the annotation workflow can be applied to a complete paper while preserving its original structure and content. Read it as [PDF-backed HTML](https://davidenitti.github.io/IperPaper/papers/Mastering%20Diverse%20Domains%20through%20World%20Models/Mastering%20Diverse%20Domains%20through%20World%20Models.html) or [native HTML](https://davidenitti.github.io/IperPaper/papers/Mastering%20Diverse%20Domains%20through%20World%20Models/Mastering%20Diverse%20Domains%20through%20World%20Models.native.html).
 
 See the paper's [annotations JSON](papers/Mastering%20Diverse%20Domains%20through%20World%20Models/annotated/Mastering%20Diverse%20Domains%20through%20World%20Models.annotations.json) and its build-maintained [citations JSON](papers/Mastering%20Diverse%20Domains%20through%20World%20Models/annotated/Mastering%20Diverse%20Domains%20through%20World%20Models.citations.json).
 
