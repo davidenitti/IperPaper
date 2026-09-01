@@ -52,8 +52,8 @@
       "id": "rssm",
       "kind": "concept",
       "label": "RSSM",
-      "short": "The Recurrent State-Space Model used as Dreamer's latent world model.",
-      "details": "The RSSM combines a deterministic recurrent state $h_t$ with a stochastic state $z_t$. Together they summarize history while supporting fast latent predictions for imagination.",
+      "short": "",
+      "details": "Dreamer uses an RSSM as its latent world model. Its deterministic state $h_t$ and stochastic state $z_t$ jointly summarize history and support fast latent predictions for imagination.",
       "background": [
         "RSSM"
       ]
@@ -159,7 +159,6 @@
       "short": "The reward predicted by the world model at time t.",
       "details": "$\\hat r_t$ is sampled from $p_\\phi(\\hat r_t \\mid h_t,z_t)$. These predictions provide imagined rewards for actor–critic learning.",
       "background": [
-        "Categorical",
         "Symexp",
         "Twohot"
       ]
@@ -199,11 +198,12 @@
       "kind": "notation",
       "label": "$p_\\phi(\\hat r_t \\mid h_t,z_t)$",
       "short": "$p_\\phi(\\hat r_t \\mid h_t,z_t)$ predicts reward from the current latent model state.",
-      "details": "This reward head supplies imagined rewards to the actor and critic. It is trained against replay reward $r_t$ using the robust prediction loss.",
+      "details": "This reward head supplies imagined rewards to the actor and critic. It is trained against replay reward $r_t$ using the symexp two-hot cross-entropy loss.",
       "background": [
         "NLL",
-        "Categorical",
-        "Softmax"
+        "Softmax",
+        "Symexp",
+        "Twohot"
       ]
     },
     {
@@ -231,9 +231,10 @@
       "kind": "concept",
       "label": "Straight-through gradient",
       "short": "A gradient estimator used to train through discrete latent samples.",
-      "details": "The forward pass samples categorical representations, while the backward pass uses a differentiable surrogate. This lets encoder and predictor networks receive gradients despite discrete sampling.",
+      "details": "If $p$ is the soft probability vector and $z$ its discrete sample, the straight-through construction $z_{\\mathrm{st}}=\\operatorname{sg}(z-p)+p$ equals $z$ in the forward pass but differentiates as $p$ in the backward pass. This lets Dreamer's encoder and predictor receive gradients through categorical samples.",
       "background": [
-        "Gradient"
+        "Gradient",
+        "StopGradient"
       ]
     },
     {
@@ -311,7 +312,7 @@
       "id": "kl_divergence",
       "kind": "operator",
       "label": "$\\operatorname{KL}$",
-      "short": "A directed discrepancy between two probability distributions.",
+      "short": "",
       "details": "Dreamer uses KL divergence to align $q_\\phi(z_t\\mid h_t,x_t)$ with $p_\\phi(z_t\\mid h_t)$. Separate stop-gradient placements split learning pressure between predictor and representation.",
       "background": [
         "KL"
@@ -321,11 +322,10 @@
       "id": "stop_gradient",
       "kind": "operator",
       "label": "$\\operatorname{sg}(\\cdot)$",
-      "short": "Returns its input unchanged while blocking gradients through it.",
+      "short": "",
       "details": "In the two KL terms, $\\sg(\\cdot)$ chooses whether the encoder distribution or dynamics predictor acts as a fixed target. This balances representation and dynamics learning.",
       "background": [
-        "StopGradient",
-        "Gradient"
+        "StopGradient"
       ]
     },
     {
@@ -439,7 +439,7 @@
       "kind": "notation",
       "label": "$\\log p_\\psi(R_t^\\lambda\\mid s_t)$",
       "short": "The critic log probability $\\log p_\\psi(R_t^\\lambda\\mid s_t)$ assigned to a $\\lambda$-return target.",
-      "details": "The negative sum of these terms trains the critic distribution. In the implementation, continuous returns are represented by soft labels over transformed categorical bins.",
+      "details": "Here $p_\\psi$ is the probability assigned by the categorical critic $v_\\psi$ to the target return. The negative sum of these terms trains the critic, with continuous returns represented by soft labels over transformed categorical bins.",
       "background": [
         "NLL"
       ]
@@ -495,8 +495,8 @@
       "id": "reinforce_estimator",
       "kind": "concept",
       "label": "REINFORCE estimator",
-      "short": "A score-function gradient estimator for stochastic policies.",
-      "details": "It weights log policy probability by a stopped-gradient normalized advantage. Dreamer uses the same estimator for discrete and continuous actions.",
+      "short": "",
+      "details": "Dreamer weights each sampled action's log probability by a stopped-gradient normalized advantage and uses this estimator for both discrete and continuous actions.",
       "background": [
         "REINFORCE"
       ]
@@ -570,7 +570,7 @@
       "kind": "symbol",
       "label": "$y$",
       "short": "A scalar prediction target such as an observation component, reward, or return.",
-      "details": "Its physical scale depends on the application domain and may span orders of magnitude. Symlog and twohot transformations make learning less sensitive to that scale.",
+      "details": "Its physical scale depends on the application domain and may span orders of magnitude. The symlog transformation and two-hot encoding make learning less sensitive to that scale.",
       "background": [
         "Symlog",
         "Twohot"
@@ -613,8 +613,8 @@
       "id": "symlog_operator",
       "kind": "operator",
       "label": "$\\operatorname{symlog}$",
-      "short": "The sign-preserving transform $\\symlog(x)\\doteq\\sign(x)\\ln(|x|+1)$.",
-      "details": "It behaves nearly linearly around zero while compressing large positive and negative magnitudes. Dreamer applies it to vector observations and regression targets.",
+      "short": "",
+      "details": "Dreamer applies symlog to vector observations and regression targets so that very different numerical scales can share one learning configuration.",
       "background": [
         "Symlog"
       ]
@@ -624,7 +624,7 @@
       "kind": "operator",
       "label": "$\\operatorname{symexp}$",
       "short": "",
-      "details": "",
+      "details": "Dreamer uses symexp to restore symlog predictions to their original scale and to construct signed support bins spanning many orders of magnitude.",
       "background": [
         "Symexp"
       ]
@@ -638,15 +638,14 @@
       "background": [
         "Symexp",
         "Twohot",
-        "Softmax",
-        "Categorical"
+        "Softmax"
       ]
     },
     {
       "id": "bin_set_B",
       "kind": "notation",
       "label": "$B=\\{b_i\\}$",
-      "short": "The set of exponentially spaced scalar support bins and its individual locations.",
+      "short": "The set of symexp-spaced scalar support bins and its individual locations.",
       "details": "$B$ is obtained by applying $\\symexp$ to values evenly spaced from $-20$ to $+20$. Probability-weighted averaging over $B$ produces continuous prediction $\\hat y$.",
       "background": [
         "Symexp"
@@ -656,8 +655,8 @@
       "id": "softmax_distribution",
       "kind": "operator",
       "label": "$\\operatorname{softmax}(f(x))$",
-      "short": "The normalized categorical probabilities $\\softmax(f(x))$ over bin set $B$.",
-      "details": "The network emits logits $f(x)$, and softmax converts them to nonnegative weights summing to one. Their inner product with $B$ is predicted scalar $\\hat y$.",
+      "short": "",
+      "details": "In Dreamer's reward and critic heads, softmax converts network logits $f(x)$ into probabilities over bin set $B$. Their inner product with $B$ is the scalar prediction $\\hat y$.",
       "background": [
         "Softmax",
         "Categorical"
@@ -667,12 +666,10 @@
       "id": "twohot_encoding",
       "kind": "operator",
       "label": "$\\operatorname{twohot}(y)$",
-      "short": "The soft categorical encoding $\\twohot(y)$ on the two bins nearest $y$.",
-      "details": "The two nonzero weights sum to one and interpolate linearly according to distance from the neighboring bins. This represents continuous targets without snapping them to one bucket.",
+      "short": "",
+      "details": "",
       "background": [
-        "Twohot",
-        "Softmax",
-        "Categorical"
+        "Twohot"
       ]
     },
     {
@@ -684,8 +681,7 @@
       "background": [
         "Twohot",
         "NLL",
-        "Softmax",
-        "Categorical"
+        "Softmax"
       ]
     },
     {
@@ -704,7 +700,7 @@
       "kind": "concept",
       "label": "CNN",
       "short": "",
-      "details": "",
+      "details": "Dreamer's encoder and decoder use CNNs for image observations.",
       "background": [
         "CNN"
       ]
@@ -714,7 +710,7 @@
       "kind": "concept",
       "label": "MLP",
       "short": "",
-      "details": "",
+      "details": "Dreamer uses MLPs for vector encoders and decoders, the actor and critic, and the dynamics, reward, and continuation predictors.",
       "background": [
         "MLP"
       ]
@@ -743,7 +739,7 @@
       "kind": "operator",
       "label": "$\\operatorname E$",
       "short": "",
-      "details": "",
+      "details": "Dreamer uses expectation to average the world-model loss over encoder samples and to read a scalar value from the critic's categorical return distribution.",
       "background": [
         "Expectation"
       ]
@@ -779,7 +775,7 @@
       "kind": "concept",
       "label": "Normal distribution",
       "short": "",
-      "details": "",
+      "details": "The paper considers a Normal critic as a simple alternative, but uses a categorical critic because return distributions may be multimodal and vary greatly in scale.",
       "background": [
         "Normal"
       ]
@@ -801,7 +797,7 @@
       "kind": "concept",
       "label": "PPO",
       "short": "",
-      "details": "",
+      "details": "The paper evaluates Dreamer against a strong PPO implementation configured with one fixed hyperparameter setting across domains.",
       "background": [
         "PPO"
       ]
@@ -819,7 +815,7 @@
       "kind": "concept",
       "label": "AGC",
       "short": "",
-      "details": "",
+      "details": "Dreamer clips each tensor's gradient when its norm exceeds $30\\%$ of the corresponding weight norm, using $\\epsilon=10^{-3}$ to handle very small weights.",
       "background": [
         "AGC"
       ]
@@ -829,7 +825,7 @@
       "kind": "operator",
       "label": "L2 norm",
       "short": "",
-      "details": "",
+      "details": "Dreamer's adaptive gradient clipping compares each tensor's gradient norm with the L2 norm of its corresponding weight tensor.",
       "background": [
         "L2Norm"
       ]
@@ -839,7 +835,7 @@
       "kind": "concept",
       "label": "LaProp",
       "short": "",
-      "details": "",
+      "details": "Dreamer uses LaProp with numerical-stability constant $\\epsilon=10^{-20}$; the paper reports that its normalize-then-momentum ordering avoids occasional instabilities observed with Adam.",
       "background": [
         "LaProp"
       ]
@@ -849,7 +845,7 @@
       "kind": "concept",
       "label": "RMSProp",
       "short": "",
-      "details": "",
+      "details": "In Dreamer's optimizer, LaProp applies RMSProp-style gradient normalization before momentum smoothing.",
       "background": [
         "RMSProp"
       ]
@@ -859,7 +855,7 @@
       "kind": "concept",
       "label": "Adam",
       "short": "",
-      "details": "",
+      "details": "The paper contrasts Adam's raw-gradient moment accumulation with LaProp's normalize-then-momentum ordering and reports occasional instability under Adam.",
       "background": [
         "Adam"
       ]
@@ -869,7 +865,7 @@
       "kind": "concept",
       "label": "One-percent uniform mixture",
       "short": "Dreamer mixes the encoder, dynamics-predictor, and categorical actor probabilities with 1% uniform probability mass.",
-      "details": "For these distributions, the resulting category probabilities cannot become zero, so sampled categories retain finite log probabilities and the latent KL terms remain bounded. The paper calls this robustness device a unimix in its summary.",
+      "details": "For $K$ categories, Dreamer replaces each predicted probability $p_i$ by $p'_i=0.99p_i+0.01/K$. Therefore no category can receive zero probability, sampled categories retain finite log probabilities, and the latent KL terms remain bounded.",
       "background": [
         "Categorical",
         "DiscreteUniform",
@@ -899,7 +895,7 @@
       "kind": "operator",
       "label": "$\\operatorname{\\delta}(b_j<x)$",
       "short": "",
-      "details": "",
+      "details": "In the two-hot definition, summing $\\operatorname{\\delta}(b_j<x)$ counts the support bins strictly below target $x$ and determines neighboring-bin index $k$.",
       "background": [
         "Indicator"
       ]
@@ -909,7 +905,7 @@
       "kind": "concept",
       "label": "GRU",
       "short": "",
-      "details": "",
+      "details": "Dreamer's sequence model uses a block-structured GRU whose recurrent weights are split into eight blocks, reducing parameter and compute growth while retaining cross-block mixing through its inputs.",
       "background": [
         "GRU"
       ]
@@ -962,12 +958,12 @@
     },
     "Entropy": {
       "short": "Entropy measures how spread out a distribution is: for discrete actions, $\\mathrm H[P]=-\\sum_a P(a)\\log P(a)$; for a continuous action density $p(a)$, differential entropy is $\\mathrm H[p]=-\\int p(a)\\log p(a)\\,da$.",
-      "details": "Here $a$ denotes an action, $P(a)$ is its probability in the discrete case, and $p(a)$ is its probability density in the continuous case. Higher entropy generally indicates a less concentrated policy. Dreamer's entropy bonus encourages exploration for both discrete and continuous action distributions.",
+      "details": "Here $a$ denotes an outcome, $P(a)$ is its probability in the discrete case, and $p(a)$ is its probability density in the continuous case. Higher entropy generally indicates a less concentrated distribution.",
       "link": "https://en.wikipedia.org/wiki/Entropy_(information_theory)"
     },
     "EMA": {
       "short": "An exponential moving average (EMA) with decay $\\rho$ updates a running estimate as $\\bar x\\leftarrow\\rho\\bar x+(1-\\rho)x$.",
-      "details": "The paper uses decay $\\rho=0.99$, so the previous estimate receives weight $0.99$ and the current batch statistic receives weight $0.01$. This smooths noisy percentile ranges into a stable running scale.",
+      "details": "A decay $\\rho$ near one gives more weight to the previous estimate and less to the newest observation, smoothing noisy measurements into a stable running statistic.",
       "link": "https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average"
     },
     "REINFORCE": {
@@ -990,7 +986,7 @@
     },
     "Bernoulli": {
       "short": "A Bernoulli distribution is a discrete probability distribution on the binary support $\\{0,1\\}$.",
-      "details": "With success probability $p\\in[0,1]$, its probability mass function is $\\Pr(X=x)=p^x(1-p)^{1-x}$ for $x\\in\\{0,1\\}$. Its negative log likelihood is binary cross-entropy, the loss used for continuation predictions.",
+      "details": "With success probability $p\\in[0,1]$, its probability mass function is $\\Pr(X=x)=p^x(1-p)^{1-x}$ for $x\\in\\{0,1\\}$. Its negative log likelihood is binary cross-entropy.",
       "link": "https://en.wikipedia.org/wiki/Bernoulli_distribution",
       "background": [
         "BernoulliParameter"
@@ -1019,13 +1015,13 @@
     },
     "Expectation": {
       "short": "Expectation is the probability-weighted average value of a random variable.",
-      "details": "For discrete outcomes it is a probability-weighted sum; for continuous outcomes it is a density-weighted integral. Dreamer uses expectations both to average training losses over latent samples and to read a scalar value from the critic's return distribution.",
+      "details": "For discrete outcomes it is a probability-weighted sum; for continuous outcomes it is a density-weighted integral.",
       "link": "https://en.wikipedia.org/wiki/Expected_value"
     },
     "ModelBasedRL": {
       "label": "Model-based reinforcement learning",
       "short": "Model-based reinforcement learning learns or uses a model of environment dynamics to improve decisions.",
-      "details": "The model can support planning or generate simulated experience. Dreamer learns a latent dynamics model and trains its actor and critic on trajectories imagined by that model.",
+      "details": "The learned model can support planning or generate simulated experience, reducing the need for direct interaction with the real environment.",
       "link": "https://en.wikipedia.org/wiki/Reinforcement_learning#Model-based"
     },
     "WorldModel": {
@@ -1037,25 +1033,25 @@
     "RSSM": {
       "label": "Recurrent State-Space Model (RSSM)",
       "short": "An RSSM combines deterministic recurrent memory with stochastic latent state variables.",
-      "details": "The recurrent component carries history, while stochastic states represent uncertainty and new information from observations. Dreamer uses this structure as its latent dynamics model.",
+      "details": "The recurrent component carries history, while stochastic states represent uncertainty and new information from observations.",
       "link": "https://arxiv.org/abs/1811.04551"
     },
     "CNN": {
       "label": "Convolutional neural network (CNN)",
       "short": "A CNN processes grid-structured data such as images using shared local filters.",
-      "details": "Weight sharing makes convolutional layers efficient and translation-aware. Dreamer uses convolutional encoders and decoders for pixel observations.",
+      "details": "Weight sharing makes convolutional layers efficient and translation-aware.",
       "link": "https://en.wikipedia.org/wiki/Convolutional_neural_network"
     },
     "MLP": {
       "label": "Multilayer perceptron (MLP)",
       "short": "An MLP is a feed-forward neural network composed of stacked affine layers and nonlinear activations.",
-      "details": "Dreamer uses MLPs for vector observations, actor and critic networks, and several world-model prediction heads.",
+      "details": "Each layer transforms its input with learned weights and biases, usually followed by a nonlinear activation except at the output.",
       "link": "https://en.wikipedia.org/wiki/Multilayer_perceptron"
     },
     "Normal": {
       "label": "Normal distribution",
       "short": "The Normal distribution is a continuous probability distribution on the real line.",
-      "details": "With mean $\\mu$ and standard deviation $\\sigma>0$, its support is $x\\in\\mathbb R$ and its density is $f_X(x)=\\frac{1}{\\sigma\\sqrt{2\\pi}}\\exp\\!\\left(-\\frac{(x-\\mu)^2}{2\\sigma^2}\\right)$. A single Normal density is unimodal, motivating Dreamer's categorical critic for potentially multimodal returns.",
+      "details": "With mean $\\mu$ and standard deviation $\\sigma>0$, its support is $x\\in\\mathbb R$ and its density is $f_X(x)=\\frac{1}{\\sigma\\sqrt{2\\pi}}\\exp\\!\\left(-\\frac{(x-\\mu)^2}{2\\sigma^2}\\right)$. A single Normal density is unimodal.",
       "link": "https://en.wikipedia.org/wiki/Normal_distribution",
       "background": [
         "NormalParameters"
@@ -1099,7 +1095,7 @@
     "PPO": {
       "label": "Proximal Policy Optimization (PPO)",
       "short": "PPO is an on-policy reinforcement-learning algorithm that limits how much the policy changes during an update.",
-      "details": "It optimizes a clipped policy-gradient surrogate over recently collected trajectories. This paper uses a strong fixed-hyperparameter PPO implementation as a general baseline.",
+      "details": "It optimizes a clipped policy-gradient surrogate over recently collected trajectories, discouraging destabilizingly large policy updates.",
       "link": "https://arxiv.org/abs/1707.06347"
     },
     "AGC": {
@@ -1111,28 +1107,28 @@
     "L2Norm": {
       "label": "L2 norm",
       "short": "The L2 norm is the square root of the sum of squared components of a vector or flattened tensor.",
-      "details": "It measures Euclidean magnitude. AGC compares a gradient norm with the norm of its corresponding weight tensor.",
+      "details": "It measures Euclidean magnitude and is invariant under rotations and reflections.",
       "link": "https://en.wikipedia.org/wiki/Norm_(mathematics)#Euclidean_norm"
     },
     "LaProp": {
       "short": "LaProp is an adaptive optimizer that applies RMS-style gradient normalization before momentum.",
-      "details": "This ordering differs from Adam, which accumulates first- and second-moment estimates from raw gradients. The paper reports that LaProp permits a smaller numerical-stability constant.",
+      "details": "This ordering differs from Adam, which accumulates first- and second-moment estimates from raw gradients.",
       "link": "https://arxiv.org/abs/2002.04839"
     },
     "RMSProp": {
       "short": "RMSProp rescales gradients using an exponential moving average of their squared magnitudes.",
-      "details": "Coordinates with persistently large gradients receive smaller effective steps. LaProp uses this normalization before applying momentum.",
+      "details": "Coordinates with persistently large gradients receive smaller effective steps.",
       "link": "https://en.wikipedia.org/wiki/Stochastic_gradient_descent#RMSProp"
     },
     "Adam": {
       "short": "Adam is an adaptive optimizer combining momentum-like first moments with second-moment gradient scaling.",
-      "details": "Bias-corrected running estimates determine coordinate-wise update sizes. The paper contrasts its ordering with LaProp's normalize-then-momentum design.",
+      "details": "Bias-corrected running estimates determine coordinate-wise update sizes.",
       "link": "https://arxiv.org/abs/1412.6980"
     },
     "DiscreteUniform": {
       "label": "Discrete uniform distribution",
       "short": "A discrete uniform distribution assigns equal probability to every outcome in a finite support.",
-      "details": "For support $\\{1,\\ldots,K\\}$, its probability mass function is $\\Pr(X=i)=1/K$ for every $i$ in the support and zero otherwise. Dreamer's 1% mixture uses this mass to keep all categorical outcomes possible.",
+      "details": "For support $\\{1,\\ldots,K\\}$, its probability mass function is $\\Pr(X=i)=1/K$ for every $i$ in the support and zero otherwise.",
       "link": "https://en.wikipedia.org/wiki/Discrete_uniform_distribution",
       "background": [
         "CategoryProbabilities"
@@ -1141,19 +1137,19 @@
     "Indicator": {
       "label": "Indicator function",
       "short": "An indicator function evaluates to one when its condition is true and zero otherwise.",
-      "details": "Summing indicators counts how many indexed conditions hold. In the twohot definition, the sum counts how many bin locations lie below the target.",
+      "details": "Summing indicators counts how many indexed conditions hold.",
       "link": "https://en.wikipedia.org/wiki/Indicator_function"
     },
     "GRU": {
       "label": "Gated recurrent unit (GRU)",
       "short": "A GRU is a recurrent neural-network cell with gates that control memory updates.",
-      "details": "Update and reset gates help it retain useful information across long sequences. Dreamer uses a block-structured GRU for its deterministic recurrent state.",
+      "details": "Update and reset gates help it retain useful information across long sequences.",
       "link": "https://en.wikipedia.org/wiki/Gated_recurrent_unit"
     },
     "ActorCritic": {
       "label": "Actor-critic reinforcement learning",
       "short": "Actor-critic methods pair an action-selection policy with a value estimator that evaluates the policy's outcomes.",
-      "details": "The actor adjusts behavior using signals derived from the critic, while the critic learns return estimates. Dreamer trains both components from trajectories imagined by its world model.",
+      "details": "The actor adjusts behavior using signals derived from the critic, while the critic learns return estimates.",
       "link": "https://en.wikipedia.org/wiki/Actor%E2%80%93critic_algorithm"
     },
     "Policy": {
@@ -1165,7 +1161,7 @@
     "LogisticRegression": {
       "label": "Logistic regression",
       "short": "Logistic regression models a binary outcome using a sigmoid-transformed real-valued score.",
-      "details": "It is trained with Bernoulli negative log likelihood, also called binary cross-entropy. Dreamer uses it for the continuation target.",
+      "details": "It is trained with Bernoulli negative log likelihood, also called binary cross-entropy.",
       "link": "https://en.wikipedia.org/wiki/Logistic_regression",
       "background": [
         "Bernoulli",
@@ -1175,7 +1171,7 @@
     "StopGradient": {
       "label": "Stop-gradient operator",
       "short": "A stop-gradient operator returns the same numerical value but has zero derivative.",
-      "details": "It makes its argument behave as a fixed target during backpropagation. Dreamer places it on opposite sides of two KL terms to route learning pressure separately.",
+      "details": "It makes its argument behave as a fixed target during backpropagation.",
       "link": "https://www.tensorflow.org/api_docs/python/tf/stop_gradient"
     },
     "Symlog": {
@@ -1187,14 +1183,17 @@
     "Symexp": {
       "label": "Symmetric exponential (symexp)",
       "short": "Symexp is the inverse function of symlog: $\\operatorname{symexp}(x)=\\operatorname{sign}(x)(\\exp(|x|)-1)$.",
-      "details": "It satisfies $\\operatorname{symexp}(\\operatorname{symlog}(y))=y$. Dreamer uses it to map symlog-space predictions back to their original scale and to map uniformly spaced transformed coordinates to exponentially spaced signed bins.",
+      "details": "It satisfies $\\operatorname{symexp}(\\operatorname{symlog}(y))=y$ and maps uniformly spaced transformed coordinates to signed values whose magnitudes grow exponentially.",
       "link": "https://arxiv.org/abs/2301.04104"
     },
     "Twohot": {
       "label": "Two-hot encoding",
-      "short": "A soft categorical encoding of a scalar that linearly splits its target weight between the two neighboring support bins.",
-      "details": "For a scalar target $y$ lying between adjacent bins $b_i \\le y \\le b_{i+1}$, two-hot encoding assigns weights $w_i=(b_{i+1}-y)/(b_{i+1}-b_i)$ and $w_{i+1}=(y-b_i)/(b_{i+1}-b_i)$, with all other entries zero. The weights sum to one and satisfy $w_i b_i+w_{i+1}b_{i+1}=y$, so the continuous target can be represented without snapping it to a single bin. The network itself may predict probability on all bins and is trained with cross entropy against this two-bin target. At inference, the scalar prediction is recovered as the probability-weighted average over all bin values. This combines continuous-valued prediction with the stable gradients of categorical learning.",
-      "link": "https://arxiv.org/abs/1707.06887"
+      "short": "A two-hot encoding represents a continuous-valued scalar using a discrete categorical distribution over fixed support bins, splitting its target probability between the two neighboring bins.",
+      "details": "For a scalar target $y$ lying between adjacent bins $b_i \\le y \\le b_{i+1}$, two-hot encoding assigns weights $w_i=(b_{i+1}-y)/(b_{i+1}-b_i)$ and $w_{i+1}=(y-b_i)/(b_{i+1}-b_i)$, with all other entries zero. Thus, although $y$ is continuous-valued, its training representation is a discrete distribution over the finite bin set. The weights sum to one and satisfy $w_i b_i+w_{i+1}b_{i+1}=y$, preserving the scalar through interpolation instead of snapping it to one bin. The network may predict probability on all bins and is trained with cross entropy against this two-bin target. At inference, the continuous-valued prediction is recovered as the probability-weighted average over all bin values. This combines continuous-valued prediction with the stable gradients of categorical learning.",
+      "link": "https://arxiv.org/abs/1707.06887",
+      "background": [
+        "Categorical"
+      ]
     },
     "RMSNorm": {
       "label": "Root Mean Square Layer Normalization (RMSNorm)",

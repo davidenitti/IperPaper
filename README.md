@@ -1,4 +1,4 @@
-# IperPaper 0.2
+# IperPaper 0.2.1
 
 IperPaper turns a scientific paper into an interactive PDF-backed or native HTML reader where mathematical symbols and technical concepts explain themselves on hover and click. The PDF-backed reader preserves the compiled layout; native HTML is an experimental alternative that might not work correctly with highly customized LaTeX.
 
@@ -14,6 +14,8 @@ For each paper, IperPaper can add:
 - a text-selection menu for asking ChatGPT or Perplexity to explain the selected passage;
 - a split layout that keeps the paper and explanation panel side by side;
 - two reading levels, with a self-contained Level 1 main text and collapsible Level 2 explanations and derivations.
+
+If you have any questions or encounter issues while using IperPaper, please open an issue on the GitHub repository.
 
 ## Examples
 
@@ -82,11 +84,33 @@ These provide the main tools IperPaper uses:
 
 Individual papers can require additional TeX packages, fonts, bibliography tools, or custom classes.
 
-## Recommended: use an AI coding agent
+## Use without AI annotations
+
+To generate an enhanced PDF-backed reader without AI-authored annotations, run
+IperPaper directly on the TeX source without passing an annotation JSON file:
+
+```bash
+iperpaper build /path/to/paper-source/ \
+  --main main.tex \
+  --mode pdf_html \
+  -o paper.html
+```
+
+Native equation, figure, table, and citation references can still receive the
+tooltips generated deterministically by the build.
+
+To use an AI coding agent to build the reader while still skipping AI-authored
+annotations, make that requirement explicit:
+
+```text
+Follow AGENTS.md for /path/to/paper-source/ and build a PDF-backed reader without AI-authored annotations.
+```
+
+## Use with AI annotations
 
 Give the agent the IperPaper repository and the paper, then ask it to follow `AGENTS.md`.
 
-Examples:
+Examples include:
 
 ```text
 Follow AGENTS.md for /path/to/paper.tex

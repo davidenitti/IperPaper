@@ -876,6 +876,95 @@ def _plain_bibliography_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _plain_tex_title(text: str) -> str | None:
+    """
+    Convert a TeX title value into readable plain text.
+
+    Args:
+        text: Raw value from ``pdftitle`` or the TeX title command.
+
+    Returns:
+        str | None: Clean title text, or ``None`` when macros remain unresolved.
+    """
+    text = _replace_tex_command_with_argument(text, "texorpdfstring", 2)
+    spacing_pattern = re.compile(r"\\(?:vspace|hspace)\*?")
+    while True:
+        match = spacing_pattern.search(text)
+        if match is None:
+            break
+        try:
+            _, end = _read_tex_delimited(text, match.end())
+        except ValueError:
+            break
+        text = text[: match.start()] + " " + text[end:]
+    declarations = (
+        "bfseries",
+        "itshape",
+        "slshape",
+        "scshape",
+        "rmfamily",
+        "sffamily",
+        "ttfamily",
+        "normalfont",
+        "tiny",
+        "scriptsize",
+        "footnotesize",
+        "small",
+        "normalsize",
+        "large",
+        "Large",
+        "LARGE",
+        "huge",
+        "Huge",
+    )
+    declaration_pattern = re.compile(r"\\(?:" + "|".join(declarations) + r")\b")
+    text = declaration_pattern.sub(" ", text)
+    text = text.replace(r"\LaTeX", "LaTeX").replace(r"\TeX", "TeX")
+    text = text.replace(r"\protect", "").replace(r"\\", " ")
+    readable = _plain_bibliography_text(text).replace("{", "").replace("}", "")
+    if not readable or re.search(r"\\[A-Za-z@]+", readable):
+        return None
+    return readable
+
+
+def extract_tex_title(source: Path, main: str | None = None) -> str | None:
+    """
+    Extract a readable title from the main TeX source when possible.
+
+    Args:
+        source: TeX source file or project directory.
+        main: Optional main TeX path relative to a project directory.
+
+    Returns:
+        str | None: Readable TeX title, or ``None`` when no usable title exists.
+    """
+    _, main_file = resolve_project(source, main)
+    text = _strip_tex_comments(_read_text(main_file))
+    pdf_title_pattern = re.compile(r"\bpdftitle\s*=")
+    for match in pdf_title_pattern.finditer(text):
+        try:
+            title, _ = _read_tex_delimited(text, match.end())
+        except ValueError:
+            continue
+        readable = _plain_tex_title(title)
+        if readable:
+            return readable
+
+    pattern = re.compile(r"\\title(?![A-Za-z@])")
+    for match in pattern.finditer(text):
+        index = _skip_tex_space(text, match.end())
+        try:
+            if index < len(text) and text[index] == "[":
+                _, index = _read_tex_delimited(text, index, "[", "]")
+            title, _ = _read_tex_delimited(text, index)
+        except ValueError:
+            continue
+        readable = _plain_tex_title(title)
+        if readable:
+            return readable
+    return None
+
+
 def _plain_bibtex_text(text: str) -> str:
     """
     Render a BibTeX field containing LaTeX markup as plain Unicode text.
@@ -2861,6 +2950,43 @@ def default_output_path(annotations_path: Path) -> Path:
     return annotations_path.with_name(output_name)
 
 
+def default_metadata_path(source: Path, main: str | None = None) -> Path:
+    """
+    Derive a virtual annotation metadata path from a TeX source.
+
+    The returned path is used only to name default reader and citation-cache
+    artifacts when no annotation JSON was supplied; no annotation file is
+    created.
+
+    Args:
+        source: TeX source file or project directory.
+        main: Optional main TeX path relative to a project directory.
+
+    Returns:
+        Path: Virtual path for deriving annotation-free artifact names.
+    """
+    project_root, main_file = resolve_project(source, main)
+    stem = project_root.parent.name if project_root.name == "annotated" else main_file.stem
+    return project_root / f"{stem}.annotations.json"
+
+
+def empty_annotation_metadata(source: Path, main: str | None = None) -> dict[str, Any]:
+    """
+    Create in-memory metadata for an annotation-free build.
+
+    Args:
+        source: TeX source file or project directory.
+        main: Optional main TeX path relative to a project directory.
+
+    Returns:
+        dict[str, Any]: Valid empty annotation metadata with a derived title.
+    """
+    metadata_path = default_metadata_path(source, main)
+    suffix = ".annotations.json"
+    title = extract_tex_title(source, main) or metadata_path.name[: -len(suffix)]
+    return {"title": title, "annotations": [], "background": {}}
+
+
 def default_pdf_path(html_path: Path) -> Path:
     """
     Derive the default PDF path from the reader HTML path.
@@ -2969,27 +3095,35 @@ def main() -> None:
     """Run the IperPaper command-line interface."""
     parser = argparse.ArgumentParser(
         prog="iperpaper",
-        description="Compile annotated TeX and build interactive PDF-backed or native HTML.",
+        description="Compile TeX and build interactive PDF-backed or native HTML.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
     validate_cmd = sub.add_parser(
-        "validate", help="Compile TeX and validate PDF annotation targets against metadata"
+        "validate", help="Compile TeX and validate PDF annotation targets"
     )
-    validate_cmd.add_argument("source", help="Annotated .tex file or annotated TeX project directory")
-    validate_cmd.add_argument("annotations", help="Path to *.annotations.json")
+    validate_cmd.add_argument("source", help=".tex file or TeX project directory")
+    validate_cmd.add_argument(
+        "annotations",
+        nargs="?",
+        help="Optional path to *.annotations.json (omit for no authored annotations)",
+    )
     validate_cmd.add_argument("--main", help="Main TeX file relative to SOURCE when SOURCE is a directory")
 
-    build_cmd = sub.add_parser("build", help="Compile annotated TeX and build interactive HTML")
-    build_cmd.add_argument("source", help="Annotated .tex file or annotated TeX project directory")
-    build_cmd.add_argument("annotations", help="Path to *.annotations.json")
+    build_cmd = sub.add_parser("build", help="Compile TeX and build interactive HTML")
+    build_cmd.add_argument("source", help=".tex file or TeX project directory")
+    build_cmd.add_argument(
+        "annotations",
+        nargs="?",
+        help="Optional path to *.annotations.json (omit for no authored annotations)",
+    )
     build_cmd.add_argument("--main", help="Main TeX file relative to SOURCE when SOURCE is a directory")
     build_cmd.add_argument(
         "-o",
         "--output",
         help=(
-            "Output HTML path (defaults to the paper root for metadata in "
-            "annotated/, otherwise beside the annotation JSON)"
+            "Output HTML path (defaults from the annotation JSON when supplied, "
+            "otherwise from the TeX source)"
         ),
     )
     build_cmd.add_argument("--pdf-output", help="Also write the compiled PDF to this path")
@@ -3000,7 +3134,7 @@ def main() -> None:
     )
     build_cmd.add_argument(
         "--citation-cache",
-        help="Citation metadata JSON path (defaults beside the annotation JSON)",
+        help="Citation metadata JSON path (defaults beside the annotation JSON or TeX source)",
     )
     build_cmd.add_argument(
         "--regenerate-links",
@@ -3021,8 +3155,12 @@ def main() -> None:
 
     args = parser.parse_args()
     source = Path(args.source)
-    annotations_path = Path(args.annotations)
-    annotations = load_annotations(annotations_path)
+    if args.annotations:
+        annotations_path = Path(args.annotations)
+        annotations = load_annotations(annotations_path)
+    else:
+        annotations_path = default_metadata_path(source, args.main)
+        annotations = empty_annotation_metadata(source, args.main)
 
     if args.command == "validate":
         pdf_bytes, targets, pages = compile_and_validate(source, annotations, args.main)

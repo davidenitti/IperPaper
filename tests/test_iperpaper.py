@@ -2,6 +2,7 @@ import io
 import json
 import re
 import shutil
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -1688,6 +1689,128 @@ Outer body continued.
             iperpaper.default_output_path(Path("custom/paper.annotations.json")),
             Path("custom/paper.html"),
         )
+
+    def test_annotation_free_defaults_use_canonical_paper_name(self):
+        """Verify annotation-free canonical projects retain paper artifact names."""
+        with tempfile.TemporaryDirectory() as tmp:
+            annotated = Path(tmp) / "papers" / "example-paper" / "annotated"
+            annotated.mkdir(parents=True)
+            (annotated / "main.tex").write_text(
+                "\\documentclass{article}\n\\begin{document}x\\end{document}\n",
+                encoding="utf-8",
+            )
+
+            metadata_path = iperpaper.default_metadata_path(annotated, "main.tex")
+            metadata = iperpaper.empty_annotation_metadata(annotated, "main.tex")
+
+            self.assertEqual(metadata_path, annotated / "example-paper.annotations.json")
+            self.assertEqual(
+                metadata,
+                {"title": "example-paper", "annotations": [], "background": {}},
+            )
+            self.assertFalse(metadata_path.exists())
+            self.assertEqual(
+                iperpaper.default_output_path(metadata_path),
+                annotated.parent / "example-paper.html",
+            )
+
+    def test_annotation_free_metadata_uses_tex_title(self):
+        """Verify annotation-free metadata prefers the main TeX title."""
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "main.tex"
+            source.write_text(
+                "\\documentclass{article}\n"
+                "% \\title{Commented title}\n"
+                "\\title{\\vspace*{-2ex}\\bfseries A \\textit{Readable} Paper \\\\ Title}\n"
+                "\\begin{document}x\\end{document}\n",
+                encoding="utf-8",
+            )
+
+            metadata = iperpaper.empty_annotation_metadata(source)
+
+            self.assertEqual(metadata["title"], "A Readable Paper Title")
+
+    def test_annotation_free_metadata_prefers_pdf_title(self):
+        """Verify annotation-free metadata prefers an explicit PDF title."""
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "main.tex"
+            source.write_text(
+                "\\documentclass{article}\n"
+                "\\usepackage{hyperref}\n"
+                "\\hypersetup{pdftitle={The Deterministic PDF Title}}\n"
+                "\\title{A Different Typeset Title}\n"
+                "\\begin{document}x\\end{document}\n",
+                encoding="utf-8",
+            )
+
+            metadata = iperpaper.empty_annotation_metadata(source)
+
+            self.assertEqual(metadata["title"], "The Deterministic PDF Title")
+
+    def test_annotation_free_metadata_falls_back_without_tex_title(self):
+        """Verify annotation-free metadata falls back to the source stem."""
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "fallback-name.tex"
+            source.write_text(
+                "\\documentclass{article}\n\\begin{document}x\\end{document}\n",
+                encoding="utf-8",
+            )
+
+            metadata = iperpaper.empty_annotation_metadata(source)
+
+            self.assertEqual(metadata["title"], "fallback-name")
+
+    def test_build_cli_allows_omitting_annotations(self):
+        """Verify the build CLI supplies empty in-memory annotation metadata."""
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "paper.tex"
+            source.write_text(
+                "\\documentclass{article}\n\\begin{document}x\\end{document}\n",
+                encoding="utf-8",
+            )
+            argv = ["iperpaper", "build", str(source), "--no-citation-link-lookup"]
+            with (
+                mock.patch.object(sys, "argv", argv),
+                mock.patch.object(iperpaper, "write_outputs", return_value=(1, 0)) as write,
+                mock.patch("builtins.print"),
+            ):
+                iperpaper.main()
+
+            call = write.call_args
+            self.assertEqual(
+                call.args[1],
+                {"title": "paper", "annotations": [], "background": {}},
+            )
+            self.assertEqual(call.args[2], source.with_suffix(".html"))
+            self.assertFalse(call.args[7])
+            self.assertEqual(call.args[8], source.with_suffix(".citations.json"))
+            self.assertFalse(source.with_suffix(".annotations.json").exists())
+
+    def test_validate_cli_allows_omitting_annotations(self):
+        """Verify the validate CLI supplies empty in-memory annotation metadata."""
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "paper.tex"
+            source.write_text(
+                "\\documentclass{article}\n\\begin{document}x\\end{document}\n",
+                encoding="utf-8",
+            )
+            argv = ["iperpaper", "validate", str(source)]
+            with (
+                mock.patch.object(sys, "argv", argv),
+                mock.patch.object(
+                    iperpaper,
+                    "compile_and_validate",
+                    return_value=(b"pdf", [], [{"width": 1, "height": 1}]),
+                ) as validate,
+                mock.patch("builtins.print"),
+            ):
+                iperpaper.main()
+
+            self.assertEqual(
+                validate.call_args.args[1],
+                {"title": "paper", "annotations": [], "background": {}},
+            )
+            self.assertFalse(source.with_suffix(".annotations.json").exists())
 
     def test_load_annotations_reports_invalid_json(self):
         """Verify that load annotations reports invalid json."""

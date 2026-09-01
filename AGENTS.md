@@ -25,9 +25,34 @@ These instructions apply to the whole repository.
    """
    ```
 
+## Annotation-free builds
+
+When the user explicitly requests a reader without AI-authored annotations:
+
+- do not add `\iperpaper` wrappers;
+- do not create an annotations JSON file;
+- preserve the supplied or recovered TeX source;
+- run `iperpaper build` without the annotations positional argument;
+- use `--mode pdf_html` unless the user requests another mode.
+
+For example:
+
+```bash
+python -m iperpaper build /path/to/tex-project/ \
+  --main main.tex \
+  --mode pdf_html \
+  -o paper.html
+```
+
+Deterministically generated tooltips for native equation, figure, table, and
+citation references are still allowed. Follow the source-acquisition,
+project-preservation, verification, and reporting instructions below where
+applicable, but skip the authored-annotation steps.
+
 ## Goal
 
-When a user asks you to enhance a scientific paper with IperPaper, produce:
+Unless the user requests the annotation-free workflow above, when they ask you
+to enhance a scientific paper with IperPaper, produce:
 
 1. the recoverable **original paper/source** when it is distinct from the annotated source;
 2. an **annotated TeX source**: one `.tex` file or a complete TeX project directory with its supporting assets;
