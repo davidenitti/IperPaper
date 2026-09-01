@@ -1192,8 +1192,8 @@
     },
     "Twohot": {
       "label": "Two-hot encoding",
-      "short": "Two-hot encoding represents a scalar using nonzero weights on its two neighboring support bins.",
-      "details": "The two weights sum to one and linearly interpolate between bin locations. This creates a soft categorical target while retaining continuous-valued information.",
+      "short": "A soft categorical encoding of a scalar that linearly splits its target weight between the two neighboring support bins.",
+      "details": "For a scalar target $y$ lying between adjacent bins $b_i \\le y \\le b_{i+1}$, two-hot encoding assigns weights $w_i=(b_{i+1}-y)/(b_{i+1}-b_i)$ and $w_{i+1}=(y-b_i)/(b_{i+1}-b_i)$, with all other entries zero. The weights sum to one and satisfy $w_i b_i+w_{i+1}b_{i+1}=y$, so the continuous target can be represented without snapping it to a single bin. The network itself may predict probability on all bins and is trained with cross entropy against this two-bin target. At inference, the scalar prediction is recovered as the probability-weighted average over all bin values. This combines continuous-valued prediction with the stable gradients of categorical learning.",
       "link": "https://arxiv.org/abs/1707.06887"
     },
     "RMSNorm": {
