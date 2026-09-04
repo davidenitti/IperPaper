@@ -1,4 +1,4 @@
-# IperPaper 0.2.1
+# IperPaper 0.3
 
 IperPaper turns a scientific paper into an interactive PDF-backed or native HTML reader where mathematical symbols and technical concepts explain themselves on hover and click. The PDF-backed reader preserves the compiled layout; native HTML is an experimental alternative that might not work correctly with highly customized LaTeX.
 
@@ -7,13 +7,14 @@ An AI agent prepares semantic LaTeX annotations plus explanation metadata. IperP
 For each paper, IperPaper can add:
 
 - equation-reference previews on hover, with clicks that jump to the referenced equation;
-- citation previews on hover, with clicks that open a verified paper PDF or linked resource when available, or jump to the bibliography entry otherwise;
+- citation previews on hover, with clicks that open a resolved paper PDF or linked resource when available, or jump to the bibliography entry otherwise;
 - figure and table previews when their references are hovered;
 - blue semantic annotations on equations, derivation steps, and technical terms, with short hover explanations and full explanations in a side panel;
 - clickable links from background explanations to corresponding Wikipedia pages;
 - a text-selection menu for asking ChatGPT or Perplexity to explain the selected passage;
+- right-click a sentence or displayed equation to highlight it; right-click it again to remove the highlight. Highlights persist in browser storage;
 - a split layout that keeps the paper and explanation panel side by side;
-- two reading levels, with a self-contained Level 1 main text and collapsible Level 2 explanations and derivations.
+- optional reading levels: authors keep the main text self-contained and wrap extra explanations and derivations in collapsible Level 2 sections.
 
 If you have any questions or encounter issues while using IperPaper, please open an issue on the GitHub repository.
 
@@ -41,7 +42,7 @@ For both examples, the AI agent chooses the semantic targets, inserts the `\iper
 
 ### 1. Install IperPaper
 
-From the repository:
+Use Python 3.10 or newer. From the repository:
 
 ```bash
 python -m venv .venv
@@ -79,7 +80,7 @@ These provide the main tools IperPaper uses:
 - `latexmk` / `pdflatex`: compile the annotated paper and tooltip math;
 - `pdfcrop`: crop each pre-rendered tooltip formula to its content;
 - `pdftocairo`: convert cropped formulas to SVG and referenced figure/table artwork to PNG;
-- `pdftotext`: optionally estimate the paper's text margins for split view placement;
+- `pdftotext`: locate rendered table text for table previews and optionally estimate the paper's text margins for split view placement;
 - `pandoc`: convert TeX to responsive HTML for `native_html` and `all` builds.
 
 Individual papers can require additional TeX packages, fonts, bibliography tools, or custom classes.
@@ -99,11 +100,29 @@ iperpaper build /path/to/paper-source/ \
 Native equation, figure, table, and citation references can still receive the
 tooltips generated deterministically by the build.
 
+If the input is a PDF or paper URL rather than TeX, the agent should first
+search for a matching TeX source, including the exact arXiv source revision.
+This source-acquisition step also applies when AI-authored annotations are
+disabled. `iperpaper build` compiles TeX; it cannot build directly from an
+arbitrary PDF or attach generated targets to that PDF. Reconstruct TeX from
+the PDF only when matching source is unavailable.
+
 To use an AI coding agent to build the reader while still skipping AI-authored
 annotations, make that requirement explicit:
 
 ```text
 Follow AGENTS.md for /path/to/paper-source/ and build a PDF-backed reader without AI-authored annotations.
+```
+
+For an arXiv paper or a PDF file, use the same request with the paper URL or
+file path:
+
+```text
+Follow AGENTS.md for https://arxiv.org/pdf/2401.01234v2 and build a PDF-backed reader without AI-authored annotations. Search for the exact matching TeX source first; do not add `\iperpaper` wrappers or an annotations JSON file.
+```
+
+```text
+Follow AGENTS.md for /path/to/paper.pdf and build a PDF-backed reader without AI-authored annotations. Search for matching TeX source first, and reconstruct from the PDF only if none is available.
 ```
 
 ## Use with AI annotations
@@ -128,13 +147,13 @@ Follow AGENTS.md for /path/to/paper.pdf
 Follow AGENTS.md for https://arxiv.org/pdf/2401.01234v2
 ```
 
-The agent should recover matching original TeX when possible, read `prompts/enhance.md`, preserve the project and assets, add annotation targets, write metadata, validate its work, build the html, and inspect the output.
+The agent should recover matching original TeX when possible, read `prompts/enhance.md`, preserve the project and assets, add annotation targets, write metadata, validate its work, build the HTML, and inspect the output. Before regenerating source or readers, the AI agent must inspect existing annotation and citation metadata in `annotated/`. The agent must reuse valid annotation metadata when its IDs match the TeX and regenerate it only when it is missing, invalid, or the user requests updated annotations.
 
 `AGENTS.md` is the operational workflow for coding agents. `prompts/enhance.md` is the detailed annotation contract.
 
 ## Output artifacts
 
-A project typically produces:
+An annotated project built with `--mode all` has the following layout:
 
 ```text
 papers/paper/
@@ -169,10 +188,12 @@ that canonical TeX file in `annotated/` instead of duplicating it under
 All files associated with a paper therefore stay together under its paper
 workspace.
 
+For a reader without AI-authored annotations, preserve the supplied or recovered TeX and omit the annotations JSON. Native reference tooltips and the citation cache are still generated. Only the reader mode(s) requested with `--mode` are written; the default is PDF-backed HTML.
+
 
 ## Pipeline
 
-- **Input:** a TeX file, TeX project, PDF, or paper URL.
+- **Input to the agent:** a TeX file, TeX project, PDF, or paper URL. The build command itself accepts only TeX.
 - **AI agent:**
   - recovers the exact TeX source when possible;
   - understands notation in the paper's context;
@@ -202,6 +223,10 @@ The default `pdf_html` reader displays the PDF compiled from the annotated LaTeX
 
 ## Annotation targets in TeX
 
+Annotations explain symbols, formulas, and technical terms in the paper: hovering shows a short explanation, and clicking opens more detail. The `\iperpaper{ID}{...}` wrapper marks the text or math that triggers an explanation; its `ID` connects that target to an entry in the annotations JSON.
+
+When you ask an AI agent to follow `AGENTS.md`, it handles this setup, inserts the wrappers, and writes or reuses the explanation metadata. `iperpaper build` then automatically validates the targets and builds the interactive reader from those prepared files. The examples below document the TeX the agent prepares and can also be used for manual annotation.
+
 The TeX project needs `xcolor` and `hyperref`. Reuse the paper's package setup when possible, then define the IperPaper wrapper once in the preamble:
 
 ```tex
@@ -220,7 +245,7 @@ The TeX project needs `xcolor` and `hyperref`. Reuse the paper's package setup w
 }
 ```
 
-The wrapper applies only to authored semantic targets. Existing citations, URLs, cross-references, and other links retain the paper's normal appearance and behavior.
+The wrapper applies only to authored semantic targets. Existing citations, URLs, cross-references, and other links retain the paper's normal appearance. Equation, figure, and table links retain their destinations; generated citation tooltips may open a resolved external resource.
 
 Prose target:
 
@@ -237,78 +262,58 @@ $p_{\iperpaper{theta}{\theta}}(x)$
 A complete local distribution can be targeted when its arguments define a specific semantic role:
 
 ```tex
-\iperpaper{reward_distribution}{p_\phi(\hat r_t \mid h_t,z_t)}
+$\iperpaper{reward_distribution}{p_\phi(\hat r_t \mid h_t,z_t)}$
 ```
 
 The same annotation ID can be reused across multiple PDF rectangles only when the same explanation is correct at each occurrence.
 
-## Automatic reference tooltips
-
-Keep equation references, figure references, table references, and citations as ordinary TeX:
-
-```tex
-See Eq.~\eqref{eq:objective}, Figure~\ref{fig:overview}, Table~\ref{tab:results}, and \cite{smith2024}.
-```
-
-Do not wrap these commands in `\iperpaper` and do not add `eqref_`, `figref_`, `tabref_`, or `bibref_` objects to the authored annotation JSON. During compilation, IperPaper:
-
-1. reads resolved equation, figure, and table destinations/numbers and bibliography labels from LaTeX `.aux` files;
-2. extracts labeled equation bodies from standard `equation`, `align`, `alignat`, `flalign`, `gather`, and `multline` environments;
-3. extracts referenced figure captions from TeX and crops the rendered figure artwork from the compiled PDF;
-4. extracts referenced table captions and tabular source from TeX and crops the rendered table artwork from the compiled PDF;
-5. extracts `\bibitem` entries from `thebibliography` source or classic BibTeX `.bbl` output and uses explicit `title`, `author`, and `doi` fields from referenced `.bib` databases as trusted metadata; `.bbl` formatting is never used to infer a paper title;
-6. finds the matching native internal-link rectangles in the compiled PDF;
-7. generates tooltip metadata and overlays those native rectangles without changing their color; equation, figure, and table references keep their native destinations, while citations with a resolved external target open that resource.
-
-Generated equation-reference metadata uses the extracted formula as its label, figure references use `Figure N`, table references use `Table N`, and bibliography references use their rendered `[N]` label. Figure- and table-reference hover cards show the rendered artwork together with the source caption, with the reference label in bold. Their display width defaults to 80% of the printed artwork width and is controlled by the shared `FIGURE_TOOLTIP_SCALE` setting in `iperpaper.py`; `FIGURE_PREVIEW_DPI` controls the embedded PNG resolution. Each number in a multi-citation keeps its own native PDF link and receives the tooltip for that bibliography entry. Repeated links to the same label or citation key share generated metadata. Clicking an equation, figure, or table target follows the underlying native PDF link. A citation opens its resolved external target when one is available and otherwise follows its native bibliography link.
-
-When bibliography lookup is enabled, explicit direct PDF URLs and arXiv PDFs
-take priority, followed by PDFs verified from explicit landing pages, Crossref
-full-text links that return actual PDF bytes, OpenAlex locations explicitly
-marked open access, and recognized open-access PDFs reported by Semantic
-Scholar. A trusted DOI selects a service's DOI lookup when available; otherwise
-Crossref is queried with separate title and author parameters, and OpenAlex and
-Semantic Scholar are searched by title and authors. Remote results must also
-match the available trusted title and authors, including results retrieved by
-DOI. If one matching OpenAlex or Semantic Scholar record has no usable PDF,
-IperPaper continues through the other matching candidates. OpenAlex records
-marked `closed` or `BRONZE` are left unlinked because their PDF may still
-require a subscription. Repository copies that are not exposed by these
-services must be supplied as an explicit bibliography URL.
-
 ## Annotation metadata and TeX in tooltips
 
-Metadata is stored separately:
+The annotations JSON stores the explanations shown when readers hover over or click an annotation target. Each entry matches a TeX wrapper's `ID` and supplies its label, short tooltip, detailed explanation, and any shared background concepts. Keeping these explanations separate from the TeX lets you edit them without changing the paper's text.
+
+An AI agent following `AGENTS.md` writes this metadata or reuses valid existing entries. During `iperpaper build`, IperPaper automatically validates the metadata, renders TeX math inside the explanations using the paper's LaTeX preamble, and embeds the results in the reader. The example below shows the format the agent prepares and can also be edited manually:
 
 ```json
 {
   "title": "Paper title",
   "background": {
     "Exp": {
-      "short": "An exponential distribution is a continuous probability distribution on the nonnegative real numbers, controlled by a positive rate parameter $\\lambda$.",
-      "details": "With rate $\\lambda>0$, its density is $f_Y(x)=\\lambda e^{-\\lambda x}$ and its survival function is $\\Pr(Y>x)=e^{-\\lambda x}$ for $x\\ge0$. Its mean is $1/\\lambda$, and it is memoryless: $\\Pr(Y>s+t\\mid Y>s)=\\Pr(Y>t)$. The inverse-transform identity $-\\log U\\sim\\Exp(1)$ holds for $U\\sim\\U(0,1)$, and if $E\\sim\\Exp(1)$ with $c>0$, then $E/c\\sim\\Exp(c)$.",
+      "label": "Exponential distribution",
+      "short": "A continuous distribution for a nonnegative waiting time, with positive rate $\\lambda$.",
+      "details": "Its support is $x\\ge0$. Its density is $f(x)=\\lambda\\exp(-\\lambda x)$ on that support and zero elsewhere.",
+      "link": "https://en.wikipedia.org/wiki/Exponential_distribution",
+      "background": ["Rate", "Density", "WaitingTimeValue", "ExponentialFunction"]
+    },
+    "Rate": {
+      "short": "$\\lambda$ is the positive event rate, measured in events per unit time.",
+      "details": "A larger rate gives shorter typical waiting times.",
       "link": "https://en.wikipedia.org/wiki/Exponential_distribution"
     },
-    "CDF": {
-      "short": "The cumulative distribution function (CDF) $F_X(x)=\\Pr(X\\le x)$ gives the probability that a random variable takes a value at most $x$.",
-      "details": "For continuous variables the CDF is nondecreasing with limits $0$ and $1$; a smaller CDF at every threshold means a stochastically larger distribution. The survival function is $\\Pr(X>x)=1-F_X(x)$.",
-      "link": "https://en.wikipedia.org/wiki/Cumulative_distribution_function"
+    "Density": {
+      "label": "Probability density",
+      "short": "$f$ denotes a probability density function.",
+      "details": "The area under the density over an interval is the probability of a value in that interval.",
+      "link": "https://en.wikipedia.org/wiki/Probability_density_function"
+    },
+    "WaitingTimeValue": {
+      "label": "Waiting-time value",
+      "short": "$x$ is a possible elapsed time at which the density is evaluated.",
+      "details": "It uses the same time unit as the waiting time.",
+      "link": "https://en.wikipedia.org/wiki/Exponential_distribution"
+    },
+    "ExponentialFunction": {
+      "label": "Exponential function",
+      "short": "$\\exp$ denotes the natural exponential function.",
+      "details": "It is positive for every real input and equals one at zero.",
+      "link": "https://en.wikipedia.org/wiki/Exponential_function"
     }
   },
   "annotations": [
     {
-      "id": "previous_action",
-      "kind": "symbol",
-      "label": "$a_{t-1}$",
-      "short": "The previous action $a_{t-1}$ is an input to the sequence model.",
-      "details": "It is the action from timestep $t-1$, before the model computes the next hidden state $h_t$.",
-      "background": []
-    },
-    {
       "id": "waiting_time",
       "kind": "symbol",
-      "label": "$\\tau_i$",
-      "short": "$\\tau_i$ is the exponential waiting time for event $i$.",
+      "label": "$\\tau$",
+      "short": "$\\tau$ is the exponential waiting time assigned to this candidate.",
       "details": "Each candidate receives one independent waiting time; the smallest wins.",
       "background": ["Exp"]
     },
@@ -331,6 +336,8 @@ annotation's own text in the detail panel whenever an annotation lists its key i
 the annotation's `background` field. The same background key can be reused by any
 number of annotations; validation fails if an annotation references a key that
 does not exist.
+
+Authored JSON must have exactly three top-level fields: `title` (a nonempty string), `background`, and `annotations`. Each annotation requires `id`, `kind`, `label`, `short`, `details`, and `background`. Annotation IDs must be unique; IDs and background keys use only ASCII letters, digits, `.`, `_`, and `-`. Allowed kinds are `symbol`, `operator`, `concept`, `notation`, `equation`, and `reference`, with `reference` normally reserved for generated tooltips. Use plain text and supported TeX math in explanation strings; HTML and Markdown formatting are not supported.
 
 An optional `label` field supplies the human-readable heading shown for the
 background block. The key remains the stable identifier used by annotations, and
@@ -392,7 +399,7 @@ If a notation macro exists only inside the document body or a local TeX group, w
 
 Annotation IDs represent semantic explanations, not just glyph strings.
 
-For example, the same base notation `p_\phi` may appear in several different predictive heads:
+For example, inside a TeX math environment, the same base notation `p_\phi` may appear in several different predictive heads:
 
 ```tex
 \iperpaper{dynamics_distribution}{p_\phi(\hat z_t \mid h_t)}
@@ -407,7 +414,48 @@ A parameter such as `\phi` itself may still reuse one annotation when its meanin
 
 `prompts/enhance.md` contains the detailed semantic-ID and math-coverage rules for agents.
 
+
+## Automatic reference tooltips
+
+Keep equation references, figure references, table references, and citations as ordinary TeX:
+
+```tex
+See Eq.~\eqref{eq:objective}, Figure~\ref{fig:overview}, Table~\ref{tab:results}, and \cite{smith2024}.
+```
+
+Do not wrap these commands in `\iperpaper` and do not add `eqref_`, `figref_`, `tabref_`, or `bibref_` objects to the authored annotation JSON. During compilation, IperPaper:
+
+1. reads resolved equation, figure, and table destinations/numbers and bibliography labels from LaTeX `.aux` files;
+2. extracts labeled equation bodies from standard `equation`, `align`, `alignat`, `flalign`, `gather`, and `multline` environments;
+3. extracts referenced figure captions from TeX and crops the rendered figure artwork from the compiled PDF;
+4. extracts referenced table captions and tabular source from TeX and crops the rendered table artwork from the compiled PDF;
+5. extracts `\bibitem` entries from `thebibliography` source or classic BibTeX `.bbl` output and uses explicit `title`, `author`, and `doi` fields from referenced `.bib` databases as trusted metadata; `.bbl` formatting is never used to infer a paper title;
+6. finds the matching native internal-link rectangles in the compiled PDF;
+7. generates tooltip metadata and overlays those native rectangles without changing their color; equation, figure, and table references keep their native destinations, while citations with a resolved external target open that resource.
+
+Generated equation-reference metadata uses the extracted formula as its label, figure references use `Figure N`, table references use `Table N`, and bibliography references use their rendered `[N]` label. Figure- and table-reference hover cards show the rendered artwork together with the source caption, with the reference label in bold. Their display width defaults to 80% of the printed artwork width and is controlled by the shared `FIGURE_TOOLTIP_SCALE` setting in `iperpaper.py`; `FIGURE_PREVIEW_DPI` controls the embedded PNG resolution. Each number in a multi-citation keeps its own native PDF link and receives the tooltip for that bibliography entry. Repeated links to the same label or citation key share generated metadata. Clicking an equation, figure, or table target follows the underlying native PDF link. A citation opens its resolved external target when one is available and otherwise follows its native bibliography link.
+
+When bibliography lookup is enabled, explicit direct PDF URLs and arXiv PDFs
+take priority, followed by PDFs verified from explicit landing pages, Crossref
+full-text links that return actual PDF bytes, OpenAlex locations explicitly
+marked open access, and recognized open-access PDFs reported by Semantic
+Scholar. A trusted DOI selects a service's DOI lookup when available; otherwise
+Crossref is queried with separate title and author parameters. OpenAlex is
+searched by title and filters matches by authors; Semantic Scholar is searched
+by title and authors. Remote results must also
+match the available trusted title and authors, including results retrieved by
+DOI. If one matching OpenAlex or Semantic Scholar record has no usable PDF,
+IperPaper continues through the other matching candidates. OpenAlex records
+marked `closed` or `bronze` are skipped as PDF sources. Explicit PDF and arXiv
+links are accepted from the bibliography, while OpenAlex and Semantic Scholar
+PDF links rely on those services' metadata; these paths do not verify the PDF bytes.
+Repository copies that are not exposed by these
+services must be supplied as an explicit bibliography URL.
+
 ## Source acquisition
+
+These rules also apply when the reader is built without AI-authored
+annotations.
 
 For PDF or URL inputs, the agent should first look for matching original source.
 
@@ -461,7 +509,8 @@ Semantic Scholar, and finally the first explicit HTTP(S) URL as a fallback. An
 explicit landing-page URL can therefore be replaced by a verified open PDF.
 Crossref uses a DOI when supplied; otherwise it queries the title and authors
 separately. OpenAlex and Semantic Scholar likewise use the DOI when available
-and also search by title and authors. Every remote candidate must match the
+and can fall back to search: OpenAlex queries the title and filters by authors,
+while Semantic Scholar queries the title and authors. Every remote candidate must match the
 available trusted title and authors. IperPaper keeps scanning matching OpenAlex
 and Semantic Scholar candidates when an earlier result has no usable PDF.
 Citations without a usable URL retain their normal reference behavior. The
@@ -469,7 +518,11 @@ Citations without a usable URL retain their normal reference behavior. The
 existing cached metadata is still reused.
 
 Builds also write citation metadata to `<paper>.citations.json` beside the
-annotation JSON. The file contains one record per bibliography entry with its
+annotation JSON, or beside the TeX source when no annotation JSON is supplied.
+Use `--citation-cache PATH` to choose another location. Without annotation JSON,
+default artifact names use the main TeX filename stem, or the parent paper
+directory's name when the source project is named `annotated`.
+The file contains records for resolved bibliography entries with their
 stable TeX/BibTeX `citation_key`, rendered `index`, `paper_title`,
 `paper_title_source`, `paper_title_verified`, `authors`, and `links`; it can be
 edited to add or replace links. Existing records are matched by `citation_key`
@@ -480,6 +533,8 @@ fallback and is replaced when fresh metadata is found. The informational
 `lookup_complete` field records whether lookup was enabled when that record was
 last refreshed; it does not promise that a link was found or that every service
 responded.
+
+With lookup disabled, only existing cache records are carried forward; a new cache can contain an empty `citations` list. `--regenerate-links` takes effect only when lookup is enabled.
 
 Automatic citation titles are bolded when they come from an explicit BibTeX
 `title` field, a metadata service, or a cache record marked
@@ -521,6 +576,8 @@ iperpaper validate \
 
 `build` repeats this validation internally, so a successful standalone `validate` is a checkpoint rather than a prerequisite.
 
+For a reader without authored annotations, omit the annotations positional argument here too. Standalone validation does not query citation services or maintain the citation cache.
+
 ## Validation performed by build
 
 Before the reader is generated, IperPaper compiles the TeX and inspects the resulting PDF.
@@ -532,6 +589,8 @@ The target validation succeeds when:
 - every discovered native equation/figure/table/citation link can be matched to its resolved source or bibliography entry.
 
 Markers in comments or unreachable TeX files therefore do not count as targets.
+
+Validation checks metadata structure and compiled targets. Semantic correctness, appropriate ID reuse, and complete explanation/background coverage still require an author or agent review.
 
 Tooltip-math compilation happens later in `iperpaper build`; malformed TeX in explanation strings is reported as a build error.
 
@@ -550,34 +609,33 @@ Each page contains:
 
 Authored IperPaper target text is styled in the compiled PDF by the `\iperpaper` wrapper. Automatic reference targets preserve the paper's native link styling. The overlay adds no permanent underline. Hovering an authored, equation, figure, table, or citation target shows its short explanation; hovering a generated figure or table target shows the preview and caption. Clicking an authored target opens the detailed explanation panel. Equation, figure, and table targets follow their original PDF destinations; citations open a resolved external resource when available and otherwise jump to the bibliography entry.
 
+Right-clicking ordinary prose highlights its complete sentence; right-clicking that sentence again removes the highlight. The browser context menu is suppressed when this highlight action is handled. Displayed equations are highlighted as complete equation blocks, while inline equations remain part of their surrounding sentence. Highlights are stored automatically in `localStorage`, scoped to the reader mode, paper title, and URL path, and restored after refresh. Left-click dragging performs ordinary browser text selection and opens the Ask AI menu, while interactive annotations, references, controls, and links retain their existing click behavior.
+
 Math inside the explanation appears as SVG produced by the paper's LaTeX environment during the build.
 
 ### Native HTML
 
 The native renderer converts TeX to a responsive HTML document with Pandoc and renders paper equations with MathJax. Authored `\iperpaper` wrappers become DOM targets, while native equation, figure, table, and citation references are connected to the same generated tooltip metadata as the PDF-backed reader. It has no embedded PDF and does not load PDF.js.
 
+Native HTML provides the same persistent right-click-to-highlight behavior using its document text and semantic display-math elements. Its highlights use separate storage from the PDF-backed reader because native text anchors and PDF text-layer anchors are not interchangeable.
+
 When generated citation metadata is available, native HTML emits one numbered `References` section with the same top-level heading hierarchy as the paper and suppresses Pandoc's duplicate raw `thebibliography` rendering.
 
 This mode prioritizes reflow, mobile reading, search, and accessibility over exact publication layout. Arbitrary document classes, custom environments, TikZ, and highly customized TeX macros may require converter-specific support; use `pdf_html` when exact fidelity is required.
 
-When a project loads `lmodern`, native HTML embeds the matching Latin Modern Roman faces for portable typography and selects MathJax 4's `mathjax-modern` font for equations. MathJax inherits the paper font for textual content inside formulas and does not automatically enlarge math to match the surrounding font's x-height. Other TeX font packages currently use a browser-safe serif prose fallback and MathJax's lighter New Computer Modern math font; matching arbitrary TeX fonts requires additional package-specific mappings.
+When a project loads `lmodern`, native HTML embeds the matching Latin Modern Roman faces when those font files are available locally and selects MathJax 4's `mathjax-modern` font for equations. MathJax inherits the paper font for textual content inside formulas and does not automatically enlarge math to match the surrounding font's x-height. Other TeX font packages currently use a browser-safe serif prose fallback and MathJax's lighter New Computer Modern math font; matching arbitrary TeX fonts requires additional package-specific mappings.
 
 ### Collapsible reading levels
 
-The reader can also collapse opt-in level-2 TeX regions while keeping each section heading visible. The source places named PDF destinations immediately before the heading, immediately after the heading, and at the end of the region:
+Load the bundled style in the TeX preamble:
 
 ```tex
-\hypertarget{iperpaper-level-start:2:two-1}{}
-\subsection{\texorpdfstring{\protect\hyperlink{iperpaper-level-start:2:two-1}{Extra detail}}{Extra detail}}
-\hypertarget{iperpaper-level-content:2:two-1}{}
-The expandable body goes here.
-\par
-\hypertarget{iperpaper-level-end:2:two-1}{}
+\usepackage{iperpaper-levels}
 ```
 
-Use a unique ASCII ID for each level-2 region. The self-link around the title gives the reader its exact PDF rectangle without changing the visible heading. During `build`, IperPaper creates a compact closed disclosure row with a colored guide and chevron; opening it reveals the level-2 body.
+IperPaper makes this package available during compilation. For standalone LaTeX compilation outside IperPaper, copy `iperpaper_templates/iperpaper-levels.sty` into the TeX project or install it in your TeX search path.
 
-Projects normally wrap those markers in a `leveltwo` environment, as the tutorial's `iperpaper-levels.sty` does:
+Use its `leveltwo` environment to mark optional explanations or derivations as collapsible sections:
 
 ```tex
 \begin{leveltwo}{Extra detail}
@@ -585,9 +643,7 @@ The expandable body goes here.
 \end{leveltwo}
 ```
 
-In `native_html` mode, the same `leveltwo` regions become semantic HTML
-`<details>` disclosures. They are collapsed by default, keep the Level 2 title
-visible, and use the same guide-and-chevron interaction without PDF geometry.
+The argument (`Extra detail`) supplies the section heading, and the content between `\begin{leveltwo}` and `\end{leveltwo}` supplies its expandable body. In both readers, the body is collapsed by default; the heading stays visible with a colored guide and chevron. Click the heading to expand or collapse the body. Main text outside these regions remains visible.
 
 ## Current limitations
 
@@ -603,14 +659,19 @@ visible, and use the same guide-and-chevron interaction without PDF geometry.
 
 ## Tests
 
-Install the test dependency in the project environment with:
+With the repository's `.venv` activated, run the suite as specified in `AGENTS.md`:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Alternatively, install the optional test dependency and use pytest:
 
 ```bash
 python -m pip install -e '.[test]'
-```
-
-```bash
 python -m pytest
 ```
+
+Integration tests use the TeX and conversion tools listed under Setup; tests that require unavailable tools may be skipped.
 
 Core and PDF-backed tests live in `tests/test_iperpaper.py`; native HTML tests live in `tests/test_iperpaper_native_html.py`.

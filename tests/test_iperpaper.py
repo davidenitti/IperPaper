@@ -1357,6 +1357,44 @@ See \eqref{eq:sum} and \cite{smith}.
 
         self.assertIn("<strong>A Useful Result</strong>", rendered[0]["tooltip_html"])
 
+    def test_bibliography_title_bolding_normalizes_dash_punctuation(self):
+        """Verify that equivalent title dash punctuation still matches."""
+        data = {
+            "title": "x",
+            "background": {},
+            "annotations": [
+                {
+                    "id": "bibref_auto_paper",
+                    "kind": "reference",
+                    "label": "[8]",
+                    "short": (
+                        "[8] Lu Luo. Efficient Online LLM Watermark Detection via "
+                        "Rao\N{EN DASH}Blackwellized E-Processes. 2026."
+                    ),
+                    "details": "Generated bibliography reference.",
+                    "background": [],
+                    "paper_title": (
+                        "Efficient Online LLM Watermark Detection via "
+                        "Rao-Blackwellized E-Processes"
+                    ),
+                    "paper_title_verified": True,
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "main.tex").write_text(
+                r"\documentclass{article}\begin{document}x\end{document}",
+                encoding="utf-8",
+            )
+            rendered = iperpaper.render_annotations_for_html(root, data)
+
+        self.assertIn(
+            "<strong>Efficient Online LLM Watermark Detection via "
+            "Rao\N{EN DASH}Blackwellized E-Processes</strong>",
+            rendered[0]["tooltip_html"],
+        )
+
     def test_missing_bibliography_title_verification_is_not_bolded(self):
         """Verify that an unverified bibliography title is not bolded."""
         data = {

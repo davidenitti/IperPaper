@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -2677,16 +2678,20 @@ def _rich_text_html_with_bold_substring(
 
     Args:
         text: Annotation text containing prose and TeX math.
-        bold_text: Exact plain-text substring to emphasize.
+        bold_text: Plain-text substring to emphasize after punctuation normalization.
         math_svgs: Pre-rendered math SVG data URLs.
 
     Returns:
         str: Escaped HTML with the requested substring wrapped in ``strong``.
     """
-    match = re.search(re.escape(bold_text), text, re.IGNORECASE)
+    normalized_text, source_indexes = _normalized_match_text(text)
+    normalized_bold_text, _ = _normalized_match_text(bold_text)
+    match = re.search(re.escape(normalized_bold_text), normalized_text)
     if not match:
         return _rich_text_html(text, math_svgs)
-    start, end = match.span()
+    normalized_start, normalized_end = match.span()
+    start = source_indexes[normalized_start]
+    end = source_indexes[normalized_end - 1] + 1
     return (
         _rich_text_html(text[:start], math_svgs)
         + "<strong>"
@@ -2694,6 +2699,39 @@ def _rich_text_html_with_bold_substring(
         + "</strong>"
         + _rich_text_html(text[end:], math_svgs)
     )
+
+
+def _normalized_match_text(text: str) -> tuple[str, list[int]]:
+    """
+    Normalize citation text for matching while retaining source positions.
+
+    Args:
+        text: Plain text to normalize.
+
+    Returns:
+        tuple[str, list[int]]: Normalized text and each character's source index.
+    """
+    dash_characters = "\u002d\u2010\u2011\u2012\u2013\u2014\u2015\u2212"
+    single_quotes = "\u0027\u2018\u2019\u201a\u201b\u2032"
+    double_quotes = '\u0022\u201c\u201d\u201e\u201f\u2033'
+    normalized: list[str] = []
+    source_indexes: list[int] = []
+    for source_index, source_character in enumerate(text):
+        characters = unicodedata.normalize("NFKC", source_character).casefold()
+        for character in characters:
+            if character in dash_characters:
+                character = "-"
+            elif character in single_quotes:
+                character = "'"
+            elif character in double_quotes:
+                character = '"'
+            elif character.isspace():
+                character = " "
+                if normalized and normalized[-1] == " ":
+                    continue
+            normalized.append(character)
+            source_indexes.append(source_index)
+    return "".join(normalized), source_indexes
 
 
 def _resolve_annotation_fallbacks(ann: dict[str, Any], background: dict[str, Any]) -> None:

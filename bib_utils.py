@@ -243,7 +243,7 @@ def load_remote_text(url: str) -> str | None:
         url,
         headers={
             "Accept-Language": "en",
-            "User-Agent": "IperPaper/0.2.1 (citation-link-enrichment)",
+            "User-Agent": "IperPaper/0.3 (citation-link-enrichment)",
         },
     )
     try:
@@ -268,7 +268,7 @@ def remote_url_is_pdf(url: str) -> bool:
         headers={
             "Accept": "application/pdf",
             "Range": "bytes=0-1023",
-            "User-Agent": "IperPaper/0.2.1 (citation-link-enrichment)",
+            "User-Agent": "IperPaper/0.3 (citation-link-enrichment)",
         },
     )
     try:

@@ -55,6 +55,89 @@ class IperPaperNativeHtmlTests(unittest.TestCase):
         self.assertIn("t.innerHTML=a.tooltip_html||a.short_html", pdf_template)
         self.assertIn("t.innerHTML=a.tooltip_html||a.short_html", native_template)
 
+    def test_reader_templates_persist_right_click_highlights(self):
+        """Verify that both readers toggle persistent right-click highlights."""
+        pdf_template = read_template("pdf_reader.html")
+        native_template = read_template("native_reader.html")
+
+        for template, mode, version in ((pdf_template, "pdf", 7), (native_template, "native", 5)):
+            self.assertIn(f"iperpaper:highlights:v{version}:{mode}:", template)
+            self.assertIn("localStorage.setItem(HIGHLIGHT_STORAGE_KEY", template)
+            self.assertIn("new Intl.Segmenter", template)
+            self.assertIn("addEventListener('contextmenu'", template)
+            self.assertIn("event.preventDefault()", template)
+            self.assertIn("user-highlight-layer", template)
+            self.assertIn('id="ask-ai"', template)
+            self.assertIn("selectionchange", template)
+        self.assertIn("function addPdfHighlightRect", pdf_template)
+        self.assertIn("function pdfBlockFormulaRect", pdf_template)
+        self.assertIn("if(item.kind==='equation')", pdf_template)
+        self.assertIn("const blockRect=pdfBlockFormulaRect(rects)", pdf_template)
+        self.assertIn("for(const rect of rects)addPdfHighlightRect", pdf_template)
+        self.assertIn(
+            ".user-highlight-layer { position:absolute; inset:0; z-index:1; pointer-events:none; "
+            "mix-blend-mode:multiply; }",
+            pdf_template,
+        )
+        self.assertIn(
+            ".user-highlight { position:absolute; background:rgb(255 250 207); border-radius:2px; }",
+            pdf_template,
+        )
+        self.assertIn("el.style.width=rect.width+2+'px'", pdf_template)
+        self.assertNotIn("::highlight(iperpaper-user-highlight)", pdf_template)
+        self.assertNotIn("className='highlight appended'", pdf_template)
+        self.assertIn("function pdfHighlightAt", pdf_template)
+        self.assertIn("function normalizePdfHighlightText", pdf_template)
+        self.assertIn("function storedHighlightRange", pdf_template)
+        self.assertIn(
+            "const boundaryText=text.replace(/([^.!?])\\n\\n(?=[ \\t]*[a-z])/g,'$1  ')", pdf_template
+        )
+        self.assertIn("previousBreak=boundaryText.lastIndexOf('\\n\\n'", pdf_template)
+        self.assertIn("nextBreak=boundaryText.indexOf('\\n\\n',offset)", pdf_template)
+        self.assertIn("sentenceBounds(boundaryText.slice(start,end),offset-start)", pdf_template)
+        self.assertIn("function equivalentPdfHighlight", pdf_template)
+        self.assertIn("userHighlights.filter(saved=>equivalentPdfHighlight(saved,item))", pdf_template)
+        self.assertIn("node?.nodeType!==Node.ELEMENT_NODE", pdf_template)
+        self.assertIn("CSS.highlights.set(USER_HIGHLIGHT_NAME,new Highlight(...ranges))", native_template)
+        self.assertIn("nativeHighlightRanges(resolved.model,resolved.start,resolved.end)", native_template)
+        self.assertIn("CSS?.highlights?.delete(USER_HIGHLIGHT_NAME)", native_template)
+        self.assertIn(".user-highlight { position:absolute; background:rgb(255 250 207);", native_template)
+        self.assertIn(
+            "::highlight(iperpaper-user-highlight) { background:rgb(255 250 207); }", native_template
+        )
+        self.assertIn(
+            "for(const range of ranges)for(const rect of mergedNativeRects(range.getClientRects()))",
+            native_template,
+        )
+        self.assertIn("pdfEquationBounds", pdf_template)
+        self.assertIn("function pdfRectsShareLine", pdf_template)
+        self.assertIn("const sameLine=pdfRectsShareLine(previous.rect,rect)", pdf_template)
+        self.assertIn("lines.find(item=>pdfRectsShareLine(item,rect))", pdf_template)
+        self.assertIn("function isPdfEquationComponent", pdf_template)
+        self.assertIn("block.some(line=>isPdfEquationLine(line,shell))", pdf_template)
+        self.assertIn("function repairPdfHighlight", pdf_template)
+        self.assertIn("repaired=repairPdfHighlight(item,model,shell)||repaired", pdf_template)
+        self.assertIn("isPdfVisualBlockBreak", pdf_template)
+        self.assertIn("baselineGap>maxHeight*1.8||fontRatio>1.28", pdf_template)
+        self.assertIn("pdfProseBounds", pdf_template)
+        self.assertIn(
+            "pdfProseBounds(model,pdfSentenceBounds(model.text,offset),caret.node,shell)", pdf_template
+        )
+        self.assertIn("pdfSentenceBounds", pdf_template)
+        self.assertIn("capHighlightRect", pdf_template)
+        self.assertIn("mergedNativeRects", native_template)
+        self.assertIn("capNativeHighlightRect", native_template)
+        self.assertIn("event.target.closest('.math.display')", native_template)
+        self.assertIn("function nativeHighlightAt", native_template)
+        self.assertIn("function nativeMathSentenceText", native_template)
+        self.assertIn("sentenceText+=nativeMathSentenceText(value)", native_template)
+        self.assertIn("function sentenceBounds(text,offset,boundaryText=text)", native_template)
+        self.assertIn("sentenceText+=value.replace(/[\\r\\n]/g,' ');", native_template)
+        self.assertIn(".map(repairNativeHighlight)", native_template)
+        self.assertIn("function repairNativeHighlight", native_template)
+        self.assertIn("bounds.end===oldEnd", native_template)
+        self.assertIn("sentenceBounds(model.text,offset,model.sentenceText)", native_template)
+
     def test_figure_cref_rewrite_preserves_single_and_multiple_links(self):
         """Verify that figure cref rewrite preserves single and multiple links."""
         annotations = {
