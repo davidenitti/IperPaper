@@ -163,6 +163,17 @@ Rules:
 Use TeX math delimiters inside annotation and background `short` or `details`
 whenever mathematical notation is clearer than plain text.
 
+In both short tooltips and detailed explanations, refer to the paper's actual
+symbols whenever needed to make inputs, outputs, dependencies, or nearby
+relationships explicit. Pair words with notation (for example, "latent code
+$\mathbf{z}$" and "generated image $f_\theta(\mathbf{z})$") rather than leaving
+the reader to guess which quantity is meant. Preserve the paper's terminology
+and mathematical typography, including bold vectors, hats, subscripts, and
+superscripts. Explain any additional symbols you introduce. Use a compact formula
+when it clarifies the relationship; do not repeat a whole equation unnecessarily.
+Keep these relationships local: a general function in a background section must
+not inherit an architectural decomposition introduced only for a later method.
+
 Prefer inline math with `$...$`:
 
 ```json

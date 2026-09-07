@@ -1,3 +1,4 @@
+import base64
 import io
 import json
 import re
@@ -1545,6 +1546,42 @@ visible
         self.assertIn('width="131pt"', converted)
         self.assertIn('height="19pt"', converted)
         self.assertIn('<path width="5"/>', converted)
+
+    @unittest.skipUnless(HAS_MATH_RENDER, "LaTeX and SVG rendering tools are required")
+    def test_math_images_preserve_glyph_baselines(self):
+        """Check actual SVG glyph positions against measured inline alignment."""
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "main.tex"
+            source.write_text(
+                r"\documentclass{article}\begin{document}x\end{document}",
+                encoding="utf-8",
+            )
+            formulas = r"$d$ $\pi$ $f_\theta$ $x_{i_j}$"
+            rendered = iperpaper._render_math_svgs(source, {
+                "annotations": [{"label": formulas, "short": formulas,
+                                 "details": r"$$\frac{1}{x}$$"}],
+                "background": {},
+            })
+        for (formula, display, bold), fragment in rendered.items():
+            with self.subTest(formula=formula, bold=bold):
+                markup = iperpaper._rich_text_html(
+                    ("$$" if display else "$") + formula + ("$$" if display else "$"),
+                    rendered, bold_math=bold,
+                )
+                if display:
+                    self.assertNotIn("vertical-align:", markup)
+                    self.assertIn("ip-math-display", markup)
+                    continue
+                svg = base64.b64decode(fragment.src.split(",", 1)[1]).decode()
+                height = float(re.search(r'height="([\d.]+)pt"', svg).group(1))
+                glyph = re.search(r'<use\b[^>]* x="([\d.]+)" y="([\d.]+)"', svg)
+                self.assertAlmostEqual(float(glyph.group(1)), 1, delta=0.002)
+                self.assertAlmostEqual(height - float(glyph.group(2)), fragment.depth, delta=0.002)
+                self.assertIn(f'vertical-align:{-fragment.depth:.6f}pt', markup)
+        self.assertAlmostEqual(rendered[("d", False, False)].depth, 1)
+        self.assertGreater(rendered[(r"f_\theta", False, False)].depth, 2)
+        self.assertGreater(rendered[("x_{i_j}", False, False)].depth,
+                           rendered[(r"f_\theta", False, False)].depth)
 
     @unittest.skipUnless(HAS_LATEX, "latexmk is required")
     def test_level_section_markers_create_collapsible_ranges(self):

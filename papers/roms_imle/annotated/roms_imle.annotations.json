@@ -1,0 +1,1361 @@
+{
+  "title": "ROMS-IMLE: A Minimalist Approach to Competitive Single-Step Generative Modelling",
+  "annotations": [
+    {
+      "id": "imle",
+      "kind": "concept",
+      "label": "IMLE",
+      "short": "",
+      "details": "",
+      "background": [
+        "IMLE"
+      ]
+    },
+    {
+      "id": "fid",
+      "kind": "concept",
+      "label": "FID",
+      "short": "",
+      "details": "",
+      "background": [
+        "FID",
+        "GaussianFeatures"
+      ]
+    },
+    {
+      "id": "lpips",
+      "kind": "concept",
+      "label": "LPIPS",
+      "short": "",
+      "details": "",
+      "background": [
+        "LPIPS"
+      ]
+    },
+    {
+      "id": "normal",
+      "kind": "notation",
+      "label": "$\\mathcal{N}(0, I)$",
+      "short": "$\\mathcal{N}(0,I)$ is the standard normal prior for the latent codes $\\mathbf{z}_1,\\ldots,\\mathbf{z}_m$.",
+      "details": "Appendix D specifies $\\mathbf{z}\\in\\mathbb{R}^{1024}$: each coordinate has mean zero and variance one, and $I$ is the identity covariance. These are generator input latent codes, distinct from the encoded-image latent maps predicted on ImageNet.",
+      "background": [
+        "Normal"
+      ]
+    },
+    {
+      "id": "normal_bold",
+      "kind": "notation",
+      "label": "$\\mathcal{N}(0,\\mathbf{I})$",
+      "short": "$\\mathcal{N}(0,\\mathbf{I})$ is the standard normal prior for the input latent code $\\mathbf{z}$.",
+      "details": "Here $\\mathbf{z}\\in\\mathbb{R}^{1024}$ and $\\mathbf{I}$ is the identity covariance. The mapping network turns $\\mathbf{z}$ into style vector $\\mathbf{w}$; the encoded-image latent map predicted on ImageNet is a different representation.",
+      "background": [
+        "Normal"
+      ]
+    },
+    {
+      "id": "gaussian",
+      "kind": "concept",
+      "label": "Gaussian",
+      "short": "Gaussian noise used as the starting endpoint of the sampler comparison.",
+      "details": "The passage does not specify its dimension or covariance. The generator input latent code dimension stated elsewhere should not be transferred to this sampler.",
+      "background": [
+        "GaussianFeatures"
+      ]
+    },
+    {
+      "id": "uniform",
+      "kind": "notation",
+      "label": "$\\mathcal{U}(0, T]$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Uniform"
+      ]
+    },
+    {
+      "id": "expectation",
+      "kind": "operator",
+      "label": "$\\mathbb{E}$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Expectation"
+      ]
+    },
+    {
+      "id": "argmin",
+      "kind": "operator",
+      "label": "$\\argmin$",
+      "short": "$\\argmin_\\theta$ returns a setting of generator parameters $\\theta$ that minimizes the objective.",
+      "details": "The resulting parameter setting is denoted $\\theta_{\\text{IMLE}}$. The inner $\\min_j$ instead returns a distance for each real example, and the expectation averages over sampled latent-code pools.",
+      "background": [
+        "Argmin",
+        "Minimum",
+        "Expectation"
+      ]
+    },
+    {
+      "id": "match_argmin",
+      "kind": "operator",
+      "label": "$\\arg\\min$",
+      "short": "$\\arg\\min_j$ selects the index $j$ with the smallest distance to the real target $\\mathbf{x}_i$.",
+      "details": "Algorithm 1 stores that index as $\\sigma(i)$ and uses latent code $\\mathbf{z}_{\\sigma(i)}$ for optimization. Selection only searches the $m$ sampled candidates, so its best match can still be poor.",
+      "background": [
+        "Argmin"
+      ]
+    },
+    {
+      "id": "compose",
+      "kind": "operator",
+      "label": "$\\circ$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Composition"
+      ]
+    },
+    {
+      "id": "grad",
+      "kind": "operator",
+      "label": "$\\nabla_\\theta$",
+      "short": "$\\nabla_\\theta\\mathcal{J}$ is the gradient of the accumulated loss $\\mathcal{J}$ with respect to generator parameters $\\theta$.",
+      "details": "The update $\\theta\\gets\\theta-(\\eta/L)\\nabla_\\theta\\mathcal{J}$ takes a step opposite this gradient. Here $\\eta$ is the learning rate and $L$ the number of stages, so the loss sum is averaged over stages.",
+      "background": [
+        "Gradient"
+      ]
+    },
+    {
+      "id": "generator",
+      "kind": "symbol",
+      "label": "$f_\\theta$",
+      "short": "The general IMLE generator $f_\\theta$ maps a latent code $\\mathbf{z}\\sim\\pi(\\mathbf{z})$ to a generated sample $f_\\theta(\\mathbf{z})$.",
+      "details": "Here $\\theta$ denotes its trainable parameters and $\\pi$ the latent-code prior. Matching compares $f_\\theta(\\mathbf{z}_j)$ with each real example $\\mathbf{x}_i$ using $d$. This definition leaves the network architecture general; it does not require the resolution-stage decomposition introduced later.",
+      "background": []
+    },
+    {
+      "id": "generator_stage",
+      "kind": "symbol",
+      "label": "$f_{\\theta^{l}}$",
+      "short": "$f_{\\theta^l}$ is resolution block $l$, with trainable parameters $\\theta^l$.",
+      "details": "It follows blocks $1,\\ldots,l-1$ in $f_\\theta$. A separate output head reads out $\\tilde{\\mathbf{x}}^l$ for comparison with $K_l(\\mathbf{x}_i)$; Algorithm 1 suppresses this head in its shorthand for the composed stage output.",
+      "background": []
+    },
+    {
+      "id": "generator_stage_L",
+      "kind": "symbol",
+      "label": "$f_{\\theta^{L}}$",
+      "short": "$f_{\\theta^L}$ is the last resolution block in the generator $f_\\theta$.",
+      "details": "It follows $f_{\\theta^{L-1}}$ and produces the final-resolution representation. Its output head gives the final prediction compared with the real target; $L$ counts resolution stages.",
+      "background": []
+    },
+    {
+      "id": "generator_stage_L_1",
+      "kind": "symbol",
+      "label": "$f_{\\theta^{L-1}}$",
+      "short": "$f_{\\theta^{L-1}}$ is the penultimate resolution block of $f_\\theta$.",
+      "details": "It passes its representation to the final block $f_{\\theta^L}$. Its own output head also receives a direct loss against the target downsampled by $K_{L-1}$.",
+      "background": []
+    },
+    {
+      "id": "generator_stage_1",
+      "kind": "symbol",
+      "label": "$f_{\\theta^{1}}$",
+      "short": "$f_{\\theta^1}$ is the first, lowest-resolution block in the generator decomposition.",
+      "details": "It is applied first in $f_\\theta=f_{\\theta^L}\\circ\\cdots\\circ f_{\\theta^1}$. Appendix D implements the generator with a latent-code mapping network and a learned constant feature map; the displayed composition is a schematic description of its stages.",
+      "background": [
+        "Composition"
+      ]
+    },
+    {
+      "id": "parameters",
+      "kind": "symbol",
+      "label": "$\\theta$",
+      "short": "Trainable parameters $\\theta$ of the general IMLE generator $f_\\theta$.",
+      "details": "After selecting a latent code $\\mathbf{z}_{\\sigma(i)}$ for each real example $\\mathbf{x}_i$, optimization changes $\\theta$ to bring $f_\\theta(\\mathbf{z}_{\\sigma(i)})$ closer to $\\mathbf{x}_i$. The background objective does not specify a partition of $\\theta$ into resolution stages.",
+      "background": []
+    },
+    {
+      "id": "imle_optimum",
+      "kind": "symbol",
+      "label": "$\\theta_{\\text{IMLE}}$",
+      "short": "$\\theta_{\\text{IMLE}}$ denotes parameters minimizing the expected sum of nearest-candidate distances.",
+      "details": "For each real example $\\mathbf{x}_i$, the objective takes $\\min_{j\\in[m]}d(\\mathbf{x}_i,f_\\theta(\\mathbf{z}_j))$, where $[m]=\\{1,\\ldots,m\\}$. It sums over all $n$ examples and averages over newly sampled latent-code pools. This is the optimization target, not the parameters at a particular iteration.",
+      "background": [
+        "IMLE",
+        "Expectation",
+        "Minimum"
+      ]
+    },
+    {
+      "id": "prior",
+      "kind": "symbol",
+      "label": "$\\pi(\\mathbf{z})$",
+      "short": "$\\pi(\\mathbf{z})$ is the prior distribution of the generator input latent code $\\mathbf{z}$.",
+      "details": "The background objective allows a general prior. Algorithm 1 instantiates it as $\\mathbf{z}\\sim\\mathcal{N}(0,\\mathbf{I})$, with the 1024-dimensional latent codes specified in Appendix D. The generated output is $f_\\theta(\\mathbf{z})$.",
+      "background": [
+        "Normal"
+      ]
+    },
+    {
+      "id": "data_density",
+      "kind": "symbol",
+      "label": "$p_\\mathrm{data}(\\mathbf{x})$",
+      "short": "$p_\\mathrm{data}(\\mathbf{x})$ is the distribution of real samples $\\mathbf{x}$ that IMLE aims to model.",
+      "details": "The training set $\\{\\mathbf{x}_i\\}_{i=1}^n$ supplies $n$ examples from this distribution. Learning $f_\\theta$ should make its outputs for latent codes drawn from $\\pi(\\mathbf{z})$ resemble these data.",
+      "background": []
+    },
+    {
+      "id": "data_distribution",
+      "kind": "symbol",
+      "label": "$p_\\mathrm{data}$",
+      "short": "$p_\\mathrm{data}$ supplies clean real endpoints $\\mathbf{x}_0$ for interpolant training.",
+      "details": "The objective draws $\\mathbf{x}_0\\sim p_\\mathrm{data}$ and noise $\\mathbf{x}_T\\sim p_T$, then constructs $\\mathbf{x}_t$ using $q_t$. These are the endpoint and intermediate variables in the training comparison.",
+      "background": []
+    },
+    {
+      "id": "example",
+      "kind": "symbol",
+      "label": "$\\mathbf{x}_i$",
+      "short": "Real training example $\\mathbf{x}_i$, where $i$ indexes the dataset.",
+      "details": "In the IMLE objective, $\\mathbf{x}_i$ is compared with generated candidates $f_\\theta(\\mathbf{z}_j)$. The minimum over $j$ gives this example its own nearest-candidate loss, and the sum over $i$ includes every real example.",
+      "background": []
+    },
+    {
+      "id": "candidate_code",
+      "kind": "symbol",
+      "label": "$\\mathbf{z}_j$",
+      "short": "Latent code $\\mathbf{z}_j$ sampled from the prior for candidate $j$.",
+      "details": "The generator turns it into $f_\\theta(\\mathbf{z}_j)$. Matching compares this output with real examples $\\mathbf{x}_i$ across the pool of $m$ sampled latent codes; $j$ indexes candidates, not coordinates of the latent vector.",
+      "background": []
+    },
+    {
+      "id": "matched_code",
+      "kind": "symbol",
+      "label": "$\\mathbf{z}_{\\sigma(i)}$",
+      "short": "Latent code $\\mathbf{z}_{\\sigma(i)}$ whose generated output was selected for real example $\\mathbf{x}_i$.",
+      "details": "The index $\\sigma(i)$ is chosen by nearest-neighbour matching. The same selected latent code is used for every stage output $\\tilde{\\mathbf{x}}_{\\sigma(i)}^l$ while $\\theta$ is optimized; the assignment is recomputed in a later matching round.",
+      "background": []
+    },
+    {
+      "id": "assignment",
+      "kind": "symbol",
+      "label": "$\\sigma(i)$",
+      "short": "$\\sigma(i)$ is the candidate index selected to match real example $\\mathbf{x}_i$.",
+      "details": "Algorithm 1 sets $\\sigma(i)=\\arg\\min_{j\\in[m]}d(\\mathbf{x}_i,\\tilde{\\mathbf{x}}_j)$, where $[m]=\\{1,\\ldots,m\\}$ and $\\tilde{\\mathbf{x}}_j=f_\\theta(\\mathbf{z}_j)$. Different real examples may select the same candidate; this is not a one-to-one assignment.",
+      "background": [
+        "Argmin"
+      ]
+    },
+    {
+      "id": "matched_stage",
+      "kind": "symbol",
+      "label": "$\\tilde{\\mathbf{x}}_{\\sigma(i)}^{l}$",
+      "short": "$\\tilde{\\mathbf{x}}_{\\sigma(i)}^l$ is the stage-$l$ prediction generated from the latent code matched to $\\mathbf{x}_i$.",
+      "details": "The stage loss compares it with $K_l(\\mathbf{x}_i)$, the real target at the same resolution. All stages use the same assignment $\\sigma(i)$, chosen using final outputs. For ImageNet, Appendix D specifies that real images are encoded before downsampling, and predictions are latent maps.",
+      "background": []
+    },
+    {
+      "id": "candidate_image",
+      "kind": "symbol",
+      "label": "$\\tilde{\\mathbf{x}}_j$",
+      "short": "$\\tilde{\\mathbf{x}}_j=f_\\theta(\\mathbf{z}_j)$ is the final output generated from latent code $\\mathbf{z}_j$.",
+      "details": "The matching step compares $\\tilde{\\mathbf{x}}_j$ with each real target $\\mathbf{x}_i$ to choose $\\sigma(i)$. It is an image for pixel-space models and an encoded-image latent map for the ImageNet model.",
+      "background": []
+    },
+    {
+      "id": "stage_image",
+      "kind": "symbol",
+      "label": "$\\tilde{\\mathbf{x}}^{l}$",
+      "short": "$\\tilde{\\mathbf{x}}^l$ is the prediction read out at resolution stage $l$ of $f_\\theta$.",
+      "details": "A stage-specific output head converts stage features into a prediction comparable with $K_l(\\mathbf{x}_i)$, the target at the same resolution. Every stage $l=1,\\ldots,L$, including the final stage, receives a direct training loss. For ImageNet, the predictions and targets are encoded-image latent maps.",
+      "background": []
+    },
+    {
+      "id": "kernel",
+      "kind": "symbol",
+      "label": "$K_l$",
+      "short": "$K_l$ downsamples a real target to the spatial resolution of stage $l$.",
+      "details": "The loss compares $K_l(\\mathbf{x}_i)$ with $\\tilde{\\mathbf{x}}_{\\sigma(i)}^l$, the prediction for the matched latent code. Appendix D uses bicubic resizing; for ImageNet it first encodes the real image and then applies $K_l$ to that latent map.",
+      "background": [
+        "Bicubic"
+      ]
+    },
+    {
+      "id": "distance_spaced",
+      "kind": "symbol",
+      "label": "$d(\\cdot, \\cdot)$",
+      "short": "$d(\\cdot, \\cdot)$ — abstract comparison function supplied to the training pseudocode.",
+      "details": "The pseudocode uses one letter for selection and optimization. Appendix D specifies different concrete comparisons for these operations; follow the annotation on the corresponding step. The optimization comparison is averaged over its elements.",
+      "background": []
+    },
+    {
+      "id": "distance",
+      "kind": "symbol",
+      "label": "$d(\\cdot,\\cdot)$",
+      "short": "$d(\\cdot,\\cdot)$ — distance between a real example and a generated candidate.",
+      "details": "The abstract objective leaves this choice open. The appendix distinguishes the metric used to choose a candidate from the loss used for parameter optimization.",
+      "background": []
+    },
+    {
+      "id": "stage_objective",
+      "kind": "symbol",
+      "label": "$\\mathcal{J}$",
+      "short": "$\\mathcal{J}$ accumulates the minibatch mean loss at each of the $L$ generator stages.",
+      "details": "After the loop, $\\mathcal{J}=\\sum_{l=1}^L\\frac{1}{|S|}\\sum_{i\\in S}d(K_l(\\mathbf{x}_i),\\tilde{\\mathbf{x}}_{\\sigma(i)}^l)$. Here $S$ is the minibatch index set and $|S|$ its size. The update uses $\\nabla_\\theta\\mathcal{J}/L$, so it optimizes the mean across stages.",
+      "background": [
+        "Gradient"
+      ]
+    },
+    {
+      "id": "learning_rate",
+      "kind": "symbol",
+      "label": "$\\eta$",
+      "short": "$\\eta$ sets the step size for updating generator parameters $\\theta$.",
+      "details": "Algorithm 1 uses $\\theta\\gets\\theta-(\\eta/L)\\nabla_\\theta\\mathcal{J}$, where $\\mathcal{J}$ sums stage losses and $L$ counts stages. Dividing by $L$ turns that sum into a stage average.",
+      "background": [
+        "Gradient"
+      ]
+    },
+    {
+      "id": "budget",
+      "kind": "symbol",
+      "label": "$m/n$",
+      "short": "$m/n$ is the ratio of generated matching candidates to real training examples.",
+      "details": "The pool has $m$ candidates shared across $n$ real examples, rather than a separate pool for each example. Larger $m/n$ can improve nearest matches but costs more generation and search work. Main experiments use $m/n=5$.",
+      "background": []
+    },
+    {
+      "id": "clean_endpoint",
+      "kind": "symbol",
+      "label": "$\\mathbf{x}_0$",
+      "short": "$\\mathbf{x}_0\\sim p_\\mathrm{data}$ is a clean real sample used as the data endpoint during interpolant training.",
+      "details": "Together with noise endpoint $\\mathbf{x}_T$, it defines the conditional law $q_t(\\mathbf{x}_t\\mid\\mathbf{x}_0,\\mathbf{x}_T)$ of training state $\\mathbf{x}_t$. The generated clean endpoint is instead written $\\mathbf{\\hat{x}}_0$.",
+      "background": []
+    },
+    {
+      "id": "noise_endpoint",
+      "kind": "symbol",
+      "label": "$\\mathbf{x}_T$",
+      "short": "$\\mathbf{x}_T\\sim p_T$ is the noise endpoint at time $T$.",
+      "details": "During training it is paired with real endpoint $\\mathbf{x}_0$ to construct $\\mathbf{x}_t$. During sampling it is the starting input to $g^T_\\theta$ in the chain that produces $\\mathbf{\\hat{x}}_0$.",
+      "background": []
+    },
+    {
+      "id": "interpolated_state",
+      "kind": "symbol",
+      "label": "$\\mathbf{x}_t$",
+      "short": "$\\mathbf{x}_t$ is a training state drawn from $q_t(\\mathbf{x}_t\\mid\\mathbf{x}_0,\\mathbf{x}_T)$ at time $t$.",
+      "details": "The model prediction $g^t_\\theta(\\mathbf{x}_t)$ is compared with target $g^t(\\mathbf{x}_0,\\mathbf{x}_t)$. This state comes from the prescribed interpolation law; $\\mathbf{\\hat{x}}_t$ instead denotes a state produced during sampling.",
+      "background": []
+    },
+    {
+      "id": "interpolation_law",
+      "kind": "symbol",
+      "label": "$q_t(\\mathbf{x}_t \\vert \\mathbf{x}_0, \\mathbf{x}_T)$",
+      "short": "$q_t(\\mathbf{x}_t\\mid\\mathbf{x}_0,\\mathbf{x}_T)$ specifies the training-state distribution given clean and noise endpoints.",
+      "details": "At time $t$, it constructs intermediate state $\\mathbf{x}_t$ from real example $\\mathbf{x}_0$ and noise $\\mathbf{x}_T$. The manuscript leaves this law general, so no particular interpolation formula or density can be inferred.",
+      "background": []
+    },
+    {
+      "id": "interpolation_symbol",
+      "kind": "symbol",
+      "label": "$q_t$",
+      "short": "$q_t$ denotes the conditional law $q_t(\\mathbf{x}_t\\mid\\mathbf{x}_0,\\mathbf{x}_T)$ for intermediate training states.",
+      "details": "The endpoints are clean data $\\mathbf{x}_0\\sim p_\\mathrm{data}$ and noise $\\mathbf{x}_T\\sim p_T$. The paper does not fix a universal density or interpolation formula for $q_t$.",
+      "background": []
+    },
+    {
+      "id": "noise_law",
+      "kind": "symbol",
+      "label": "$p_T$",
+      "short": "$p_T$ is the distribution of noise endpoint $\\mathbf{x}_T$.",
+      "details": "Training draws $\\mathbf{x}_T\\sim p_T$ to construct interpolated states, and sampling starts from the same endpoint distribution. This is distinct from $\\pi(\\mathbf{z})$, the latent-code prior for the IMLE generator.",
+      "background": []
+    },
+    {
+      "id": "noise_law_braces",
+      "kind": "symbol",
+      "label": "$p_{T}$",
+      "short": "$p_T$ is the distribution of noise endpoint $\\mathbf{x}_T$.",
+      "details": "Training draws $\\mathbf{x}_T\\sim p_T$ to construct interpolated states, and sampling starts from the same endpoint distribution. This is distinct from $\\pi(\\mathbf{z})$, the latent-code prior for the IMLE generator.",
+      "background": []
+    },
+    {
+      "id": "flow_loss",
+      "kind": "symbol",
+      "label": "$\\mathcal{L}$",
+      "short": "$\\mathcal{L}(\\theta)$ averages the discrepancy between prediction $g^t_\\theta(\\mathbf{x}_t)$ and target $g^t(\\mathbf{x}_0,\\mathbf{x}_t)$.",
+      "details": "The comparison is $\\ell_t$, evaluated at a sampled time $t$, real endpoint $\\mathbf{x}_0$, noise endpoint $\\mathbf{x}_T$, and conditional training state $\\mathbf{x}_t$. Thus supervision is defined along training interpolations, not by rolling out generated trajectories.",
+      "background": [
+        "Expectation",
+        "SI"
+      ]
+    },
+    {
+      "id": "discrete_flow_loss",
+      "kind": "symbol",
+      "label": "$\\tilde{\\mathcal{L}}$",
+      "short": "$\\tilde{\\mathcal{L}}(\\theta)$ averages the interpolant training loss over integer times $t=1,\\ldots,T$.",
+      "details": "Each term compares $g^t_\\theta(\\mathbf{x}_t)$ with $g^t(\\mathbf{x}_0,\\mathbf{x}_t)$ using $\\ell_t$. The factor $1/T$ gives equal weight to the $T$ time stages; this motivates the later average over $L$ generator resolutions.",
+      "background": [
+        "Expectation",
+        "SI"
+      ]
+    },
+    {
+      "id": "local_loss",
+      "kind": "symbol",
+      "label": "$\\ell_t$",
+      "short": "$\\ell_t$ compares target $g^t(\\mathbf{x}_0,\\mathbf{x}_t)$ with prediction $g^t_\\theta(\\mathbf{x}_t)$ at time $t$.",
+      "details": "The manuscript leaves this comparison general. The subscript $t$ allows its form or weighting to depend on interpolation time; it is not the generator-stage loss $d$ introduced later.",
+      "background": []
+    },
+    {
+      "id": "supervision_target",
+      "kind": "symbol",
+      "label": "$g^t$",
+      "short": "$g^t(\\mathbf{x}_0,\\mathbf{x}_t)$ is the desired training output at time $t$.",
+      "details": "It is constructed from clean example $\\mathbf{x}_0$ and interpolation state $\\mathbf{x}_t$ and is compared with learned prediction $g^t_\\theta(\\mathbf{x}_t)$. Its output type is left general; the superscript $t$ indexes time, not a power.",
+      "background": []
+    },
+    {
+      "id": "time_model",
+      "kind": "symbol",
+      "label": "$g^t_{\\theta}$",
+      "short": "$g^t_\\theta(\\mathbf{x}_t)$ is the learned prediction at training state $\\mathbf{x}_t$ and time $t$.",
+      "details": "The loss $\\ell_t$ compares it with target $g^t(\\mathbf{x}_0,\\mathbf{x}_t)$. Here $\\theta$ is the predictor parameter set. Later the manuscript schematically reuses $g^t_\\theta$ for an entire sampler update; that is a different local role.",
+      "background": []
+    },
+    {
+      "id": "time_stage_1",
+      "kind": "symbol",
+      "label": "$g^1_{\\theta}$",
+      "short": "$g^1_\\theta$ is the last update applied in the unrolled sampler.",
+      "details": "$g^1_\\theta(\\mathbf{\\hat{x}}_1)=\\mathbf{\\hat{x}}_0$ produces the final clean sample. Composition is evaluated from right to left in $h_\\theta=g^1_\\theta\\circ\\cdots\\circ g^T_\\theta$.",
+      "background": [
+        "Composition"
+      ]
+    },
+    {
+      "id": "time_stage_2",
+      "kind": "symbol",
+      "label": "$g^2_{\\theta}$",
+      "short": "$g^2_\\theta$ is the penultimate update applied in the unrolled sampler.",
+      "details": "$g^2_\\theta(\\mathbf{\\hat{x}}_2)=\\mathbf{\\hat{x}}_1$ supplies the input to final update $g^1_\\theta$. Composition is evaluated from right to left in $h_\\theta=g^1_\\theta\\circ\\cdots\\circ g^T_\\theta$.",
+      "background": [
+        "Composition"
+      ]
+    },
+    {
+      "id": "time_stage_T",
+      "kind": "symbol",
+      "label": "$g^T_{\\theta}$",
+      "short": "$g^T_\\theta$ is the first update applied in the unrolled sampler.",
+      "details": "$g^T_\\theta(\\mathbf{x}_T)=\\mathbf{\\hat{x}}_{T-1}$ begins at the prior-noise draw $\\mathbf{x}_T$. Composition is evaluated from right to left in $h_\\theta=g^1_\\theta\\circ\\cdots\\circ g^T_\\theta$.",
+      "background": [
+        "Composition"
+      ]
+    },
+    {
+      "id": "unrolled_model",
+      "kind": "symbol",
+      "label": "$h_{\\theta}$",
+      "short": "$h_\\theta$ maps noise $\\mathbf{x}_T$ to generated sample $\\mathbf{\\hat{x}}_0$ by composing all sampler updates.",
+      "details": "The definition is $h_\\theta=g^1_\\theta\\circ\\cdots\\circ g^T_\\theta$, with $g^T_\\theta$ applied first. Calling the chain one model regroups its $T$ updates; it does not reduce them to one denoising-network evaluation.",
+      "background": [
+        "Composition"
+      ]
+    },
+    {
+      "id": "unrolled_model_plain",
+      "kind": "symbol",
+      "label": "$h_\\theta$",
+      "short": "$h_\\theta$ maps noise $\\mathbf{x}_T$ to generated sample $\\mathbf{\\hat{x}}_0$ by composing all sampler updates.",
+      "details": "The definition is $h_\\theta=g^1_\\theta\\circ\\cdots\\circ g^T_\\theta$, with $g^T_\\theta$ applied first. Calling the chain one model regroups its $T$ updates; it does not reduce them to one denoising-network evaluation.",
+      "background": [
+        "Composition"
+      ]
+    },
+    {
+      "id": "generated_endpoint",
+      "kind": "symbol",
+      "label": "$\\mathbf{\\hat{x}}_0$",
+      "short": "$\\mathbf{\\hat{x}}_0=h_\\theta(\\mathbf{x}_T)$ is the final sample produced from noise endpoint $\\mathbf{x}_T$.",
+      "details": "The hat distinguishes a generated sample from real clean example $\\mathbf{x}_0$. It is produced after the last update $g^1_\\theta$ of the unrolled sampler.",
+      "background": []
+    },
+    {
+      "id": "generated_previous",
+      "kind": "symbol",
+      "label": "$\\mathbf{\\hat{x}}_{t-1}$",
+      "short": "$\\mathbf{\\hat{x}}_{t-1}=g^t_\\theta(\\mathbf{\\hat{x}}_t)$ is the generated state after the time-$t$ sampler update.",
+      "details": "For $t>1$, it becomes input to the next update $g^{t-1}_\\theta$; at $t=1$, it is the final generated sample $\\mathbf{\\hat{x}}_0$. The index change alone does not guarantee a decrease in image error.",
+      "background": []
+    },
+    {
+      "id": "generated_current",
+      "kind": "symbol",
+      "label": "$\\mathbf{\\hat{x}}_t$",
+      "short": "$\\mathbf{\\hat{x}}_t$ is the generated input state to sampler update $g^t_\\theta$.",
+      "details": "The update produces $\\mathbf{\\hat{x}}_{t-1}$. At the start, $\\mathbf{\\hat{x}}_T$ corresponds to the noise draw $\\mathbf{x}_T$; interior states come from preceding updates rather than the training law $q_t$.",
+      "background": []
+    },
+    {
+      "id": "style_vector",
+      "kind": "symbol",
+      "label": "$\\mathbf{w}$",
+      "short": "$\\mathbf{w}$ is the style vector obtained by mapping the input latent code $\\mathbf{z}$ through the mapping network.",
+      "details": "Whereas $\\mathbf{z}\\in\\mathbb{R}^{1024}$ is sampled from the prior, $\\mathbf{w}$ is a learned transformation of that sample. It supplies the scale and shift controls used by adaptive instance normalization in the decoder layers; the manuscript does not state its dimension.",
+      "background": [
+        "AdaIN"
+      ]
+    },
+    {
+      "id": "multi_stage",
+      "kind": "concept",
+      "label": "multi-stage supervision",
+      "short": "Each stage prediction $\\tilde{\\mathbf{x}}_{\\sigma(i)}^l$ receives a direct loss against the resolution-matched target $K_l(\\mathbf{x}_i)$.",
+      "details": "Here $l$ indexes resolution stages and $\\sigma(i)$ selects the latent code matched to real example $\\mathbf{x}_i$. Losses are averaged over elements, minibatch examples, and stages. Intermediate heads supply training supervision; sampling still evaluates $f_\\theta$ in one forward pass.",
+      "background": []
+    },
+    {
+      "id": "round_trip",
+      "kind": "concept",
+      "label": "round-trip rejection",
+      "short": "A generated image is rejected if its LPIPS distance from its encode-decode reconstruction exceeds a threshold.",
+      "details": "For clarity, write $E$ and $D$ for the frozen image encoder and decoder, and $\\mathbf{y}$ for a generated image. The compared images are $\\mathbf{y}$ and $D(E(\\mathbf{y}))$. Appendix D reports that the fixed threshold rejects roughly 5% of candidates; its numerical value is not given. This adds encoder/decoder work beyond the generator evaluation.",
+      "background": [
+        "LPIPS",
+        "EQVAE"
+      ]
+    },
+    {
+      "id": "geman",
+      "kind": "concept",
+      "label": "Geman-McClure",
+      "short": "The robust penalty selected by the paper to reduce the influence of mismatched pairs.",
+      "details": "Configuration E uses this penalty with direct intermediate supervision and has the best FID in the Oxford Flowers loss ablation. Its scale and full implementation are not specified in the manuscript.",
+      "background": [
+        "GemanMcClure",
+        "Robust",
+        "FID",
+        "GaussianFeatures"
+      ]
+    },
+    {
+      "id": "cauchy",
+      "kind": "concept",
+      "label": "Cauchy",
+      "short": "One of the robust loss candidates in the ablation.",
+      "details": "Configuration C replaces the loss of the multi-stage baseline with this penalty. The manuscript does not give its scale parameter.",
+      "background": [
+        "CauchyLoss",
+        "Robust"
+      ]
+    },
+    {
+      "id": "pseudo_huber",
+      "kind": "concept",
+      "label": "Pseudo-Huber",
+      "short": "A smooth robust alternative to squared error, tested in the loss ablation.",
+      "details": "Configuration D tests this penalty in place of the loss of the multi-stage baseline. The manuscript does not give its scale parameter.",
+      "background": [
+        "PseudoHuber",
+        "Robust"
+      ]
+    },
+    {
+      "id": "diffusion_parameters",
+      "label": "$\\theta$",
+      "short": "$\\theta$ — parameters of the time-dependent denoising model.",
+      "details": "The same model parameters are shared across time-conditioned stages in the unrolled comparison; these are distinct from the parameters of the proposed generator.",
+      "background": [],
+      "kind": "symbol"
+    },
+    {
+      "id": "endpoint_conditional",
+      "label": "$p(\\mathbf{x}_0 \\mid \\mathbf{x}_{T})$",
+      "short": "$p(\\mathbf{x}_0 \\mid \\mathbf{x}_{T})$ — conditional distribution of the final clean endpoint given the initial noisy endpoint.",
+      "details": "Integrating over all intermediate states expresses the entire reverse chain as a single endpoint conditional.",
+      "background": [],
+      "kind": "symbol"
+    },
+    {
+      "id": "last_transition",
+      "label": "$p_\\theta(\\mathbf{x}_{0} \\mid \\mathbf{x}_{1})$",
+      "short": "$p_\\theta(\\mathbf{x}_{0} \\mid \\mathbf{x}_{1})$ — final reverse transition from state 1 to the clean endpoint.",
+      "details": "This is the last factor applied in sampling, although it appears first in the product as written.",
+      "background": [],
+      "kind": "symbol"
+    },
+    {
+      "id": "second_transition",
+      "label": "$p_\\theta(\\mathbf{x}_{1} \\mid \\mathbf{x}_{2})$",
+      "short": "$p_\\theta(\\mathbf{x}_{1} \\mid \\mathbf{x}_{2})$ — reverse transition from state 2 to state 1.",
+      "details": "Its conditioning state differs from the final clean-endpoint transition.",
+      "background": [],
+      "kind": "symbol"
+    },
+    {
+      "id": "first_transition",
+      "label": "$p_\\theta(\\mathbf{x}_{T-1} \\mid \\mathbf{x}_{T})$",
+      "short": "$p_\\theta(\\mathbf{x}_{T-1} \\mid \\mathbf{x}_{T})$ — first reverse transition from the prior endpoint.",
+      "details": "Sampling this conditional begins the reverse chain at the noisiest end.",
+      "background": [],
+      "kind": "symbol"
+    },
+    {
+      "id": "general_transition",
+      "label": "$p_\\theta(\\mathbf{x}_{t-1} \\mid \\mathbf{x}_t)$",
+      "short": "General reverse-step conditional from time $t$ to time $t-1$.",
+      "details": "The product combines these factors; integration marginalizes every intermediate state to obtain the endpoint conditional.",
+      "background": [],
+      "kind": "symbol"
+    },
+    {
+      "id": "gaussian_features",
+      "label": "Gaussian",
+      "short": "FID approximates each feature distribution by a multivariate normal with fitted mean and covariance.",
+      "details": "This is an evaluation approximation and differs from the zero-mean, identity-covariance prior sampled by the generator.",
+      "background": [
+        "GaussianFeatures",
+        "FID",
+        "ExponentialFunction",
+        "MatrixNotation"
+      ],
+      "kind": "concept"
+    },
+    {
+      "id": "candidate_set",
+      "label": "$[m]$",
+      "short": "Indices of the $m$ generated candidates in the current matching pool.",
+      "details": "The notation denotes the integer set $\\{1,\\ldots,m\\}$. The nearest candidate is selected from this finite pool.",
+      "kind": "notation",
+      "background": []
+    },
+    {
+      "id": "dataset_set",
+      "label": "$[n]$",
+      "short": "Indices of all $n$ real training examples.",
+      "details": "The notation denotes $\\{1,\\ldots,n\\}$. A minibatch is a subset of these indices.",
+      "kind": "notation",
+      "background": []
+    },
+    {
+      "id": "stage_set",
+      "label": "$[L]$",
+      "short": "Indices of the $L$ generator resolution stages.",
+      "details": "The notation denotes $\\{1,\\ldots,L\\}$. Every stage receives direct supervision.",
+      "kind": "notation",
+      "background": []
+    },
+    {
+      "id": "dataset_count",
+      "label": "$n$",
+      "short": "$n$ — number of real examples in the training dataset.",
+      "details": "Each example contributes its nearest-candidate loss to the objective.",
+      "kind": "symbol",
+      "background": []
+    },
+    {
+      "id": "candidate_count",
+      "label": "$m$",
+      "short": "$m$ — number of generated candidates used in a matching round.",
+      "details": "The ratio to the number of real examples controls the sampling budget and nearest-neighbour search workload.",
+      "kind": "symbol",
+      "background": []
+    },
+    {
+      "id": "training_round",
+      "label": "$t$",
+      "short": "$t$ — outer matching-and-optimization round in Algorithm 1.",
+      "details": "This is a training iteration index, distinct from the interpolation time denoted by the same letter in the background section.",
+      "kind": "symbol",
+      "background": []
+    },
+    {
+      "id": "training_rounds",
+      "label": "$T$",
+      "short": "$T$ — number of outer training rounds in Algorithm 1.",
+      "details": "This algorithmic stopping count is distinct from the noise-endpoint time or sampler depth used in the interpolant comparison.",
+      "kind": "symbol",
+      "background": []
+    },
+    {
+      "id": "minibatch",
+      "label": "$S$",
+      "short": "$S\\subseteq[n]$ contains the real-example indices in the current optimization minibatch.",
+      "details": "Here $[n]=\\{1,\\ldots,n\\}$ and $|S|$ is the minibatch size. Each $i\\in S$ uses the matched latent code $\\mathbf{z}_{\\sigma(i)}$ at all stages, and $|S|^{-1}\\sum_{i\\in S}$ averages their losses.",
+      "kind": "symbol",
+      "background": []
+    },
+    {
+      "id": "imle_distance",
+      "label": "$d$",
+      "short": "$d(\\mathbf{x}_i,f_\\theta(\\mathbf{z}_j))$ measures how far candidate $j$ is from real example $i$.",
+      "details": "The inner minimum chooses the smallest of these distances for each $\\mathbf{x}_i$; the outer sum includes every real example. This general IMLE objective leaves the comparison function unspecified.",
+      "kind": "symbol",
+      "background": []
+    },
+    {
+      "id": "algorithm_distance",
+      "label": "$d$",
+      "short": "$d(\\mathbf{x}_i,\\tilde{\\mathbf{x}}_j)$ is the selection distance used to choose the matched candidate index $\\sigma(i)$.",
+      "details": "Appendix D uses LPIPS between images for pixel models and squared Euclidean distance between real and generated EQ-VAE latent maps for ImageNet. After selection, optimization uses the separate per-stage training loss also denoted $d$ in Algorithm 1.",
+      "kind": "symbol",
+      "background": [
+        "LPIPS",
+        "L2",
+        "EQVAE"
+      ]
+    },
+    {
+      "id": "sampler_update",
+      "kind": "symbol",
+      "label": "$g^t_{\\theta}$",
+      "short": "Here $g^t_\\theta$ maps generated state $\\mathbf{\\hat{x}}_t$ to $\\mathbf{\\hat{x}}_{t-1}$.",
+      "details": "The sampler is written schematically as $\\mathbf{\\hat{x}}_{t-1}=g^t_\\theta(\\mathbf{\\hat{x}}_t)$. This use denotes the whole update; a concrete sampler may combine the trained prediction with a numerical update rule. The same glyph in the training loss denotes a prediction evaluated at $\\mathbf{x}_t$.",
+      "background": []
+    },
+    {
+      "id": "stage_training_distance",
+      "kind": "symbol",
+      "label": "$d$",
+      "short": "$d(K_l(\\mathbf{x}_i),\\tilde{\\mathbf{x}}_{\\sigma(i)}^l)$ penalizes the difference between the stage-$l$ target and matched prediction.",
+      "details": "ImageNet training averages Geman-McClure penalties on elementwise latent-map residuals. Pixel training combines LPIPS, DINO, and pixel losses with weights 1.0, 1.0, and 0.1. The manuscript does not fully specify how robustification interacts with those pixel-loss components.",
+      "background": [
+        "GemanMcClure",
+        "Robust",
+        "LPIPS",
+        "DINO"
+      ]
+    },
+    {
+      "id": "selection_distance_notation",
+      "kind": "symbol",
+      "label": "$d(\\cdot, \\cdot)$",
+      "short": "$d(\\mathbf{x}_i,\\tilde{\\mathbf{x}}_j)$ is the selection distance used to choose the matched candidate index $\\sigma(i)$.",
+      "details": "Appendix D uses LPIPS between images for pixel models and squared Euclidean distance between real and generated EQ-VAE latent maps for ImageNet. After selection, optimization uses the separate per-stage training loss also denoted $d$ in Algorithm 1.",
+      "background": [
+        "LPIPS",
+        "L2",
+        "EQVAE"
+      ]
+    },
+    {
+      "id": "robust_training_notation",
+      "kind": "symbol",
+      "label": "$d(\\cdot, \\cdot)$",
+      "short": "Here $d$ is the optimization penalty applied to a prediction and its matched real target.",
+      "details": "Replacing it with a robust loss reduces the gradient contribution of large mismatches in $d(K_l(\\mathbf{x}_i),\\tilde{\\mathbf{x}}_{\\sigma(i)}^l)$. Appendix D separately specifies the distance that selects $\\sigma(i)$; this paragraph does not establish that selection uses the same robust penalty.",
+      "background": [
+        "Robust",
+        "Gradient"
+      ]
+    },
+    {
+      "id": "stage_count",
+      "kind": "symbol",
+      "label": "$L$",
+      "short": "$L$ — number of generator resolution stages.",
+      "details": "The training procedure directly supervises every stage and averages the accumulated loss over this count.",
+      "background": []
+    },
+    {
+      "id": "stage_index",
+      "kind": "symbol",
+      "label": "$l$",
+      "short": "$l$ — generator resolution-stage index.",
+      "details": "It increases from the first, lowest-resolution stage toward the final output stage; it is distinct from interpolation time in the sampler comparison.",
+      "background": []
+    },
+    {
+      "id": "batch_size",
+      "kind": "symbol",
+      "label": "$|S|$",
+      "short": "$|S|$ — number of real examples in the current minibatch.",
+      "details": "Dividing the summed example losses by this count forms a minibatch mean before averaging across stages.",
+      "background": []
+    },
+    {
+      "id": "interpolation_time",
+      "kind": "symbol",
+      "label": "$t$",
+      "short": "$t$ — interpolation time in the noise-to-data comparison.",
+      "details": "Training samples a continuous time in Equation 2; the reformulation in Equation 4 sums over integer times. Neither use is an outer generator-training round.",
+      "background": []
+    },
+    {
+      "id": "sampler_horizon",
+      "kind": "symbol",
+      "label": "$T$",
+      "short": "$T$ — noise-endpoint time and, in the discrete unrolled view, total number of sampler stages.",
+      "details": "The paper moves from a continuous-time interval to stages numbered 1 through this endpoint. This use is separate from the stopping count in Algorithm 1.",
+      "background": []
+    },
+    {
+      "id": "input_code",
+      "kind": "symbol",
+      "label": "$\\mathbf{z}$",
+      "short": "$\\mathbf{z}$ is the generator input latent code, sampled as $\\mathbf{z}\\sim\\mathcal{N}(0,\\mathbf{I})$.",
+      "details": "Appendix D specifies $\\mathbf{z}\\in\\mathbb{R}^{1024}$. The mapping network transforms it into style vector $\\mathbf{w}$, which controls the decoder. It differs from the encoded-image latent map generated by the ImageNet model.",
+      "background": [
+        "Normal"
+      ]
+    },
+    {
+      "id": "evaluation_neighbours",
+      "kind": "symbol",
+      "label": "$k$",
+      "short": "$k$ — neighbour count determining feature-space neighbourhood radii for precision and recall.",
+      "details": "Appendix E sets this count to three. Changing it changes the estimated sets used for fidelity and coverage measurements.",
+      "background": [
+        "PrecisionRecall"
+      ]
+    },
+    {
+      "id": "bg_imle_0",
+      "kind": "concept",
+      "label": "Implicit Maximum Likelihood Estimation",
+      "short": "",
+      "details": "",
+      "background": [
+        "IMLE"
+      ]
+    },
+    {
+      "id": "bg_gradient_0",
+      "kind": "concept",
+      "label": "gradient",
+      "short": "",
+      "details": "",
+      "background": [
+        "Gradient"
+      ]
+    },
+    {
+      "id": "bg_gradient_1",
+      "kind": "concept",
+      "label": "gradients",
+      "short": "",
+      "details": "",
+      "background": [
+        "Gradient"
+      ]
+    },
+    {
+      "id": "bg_composition_0",
+      "kind": "concept",
+      "label": "composition",
+      "short": "",
+      "details": "",
+      "background": [
+        "Composition"
+      ]
+    },
+    {
+      "id": "bg_composition_2",
+      "kind": "concept",
+      "label": "compositional",
+      "short": "",
+      "details": "",
+      "background": [
+        "Composition"
+      ]
+    },
+    {
+      "id": "bg_robust_0",
+      "kind": "concept",
+      "label": "robust training loss",
+      "short": "",
+      "details": "",
+      "background": [
+        "Robust"
+      ]
+    },
+    {
+      "id": "bg_robust_1",
+      "kind": "concept",
+      "label": "robust loss",
+      "short": "",
+      "details": "",
+      "background": [
+        "Robust"
+      ]
+    },
+    {
+      "id": "bg_robust_2",
+      "kind": "concept",
+      "label": "Robust Loss",
+      "short": "",
+      "details": "",
+      "background": [
+        "Robust"
+      ]
+    },
+    {
+      "id": "bg_robust_3",
+      "kind": "concept",
+      "label": "robust statistics",
+      "short": "",
+      "details": "",
+      "background": [
+        "Robust"
+      ]
+    },
+    {
+      "id": "bg_adain_0",
+      "kind": "concept",
+      "label": "AdaIN",
+      "short": "",
+      "details": "",
+      "background": [
+        "AdaIN"
+      ]
+    },
+    {
+      "id": "bg_adain_1",
+      "kind": "concept",
+      "label": "Adaptive Instance Normalization",
+      "short": "",
+      "details": "",
+      "background": [
+        "AdaIN"
+      ]
+    },
+    {
+      "id": "bg_dino_0",
+      "kind": "concept",
+      "label": "DINO",
+      "short": "",
+      "details": "",
+      "background": [
+        "DINO"
+      ]
+    },
+    {
+      "id": "bg_eqvae_0",
+      "kind": "concept",
+      "label": "EQ-VAE",
+      "short": "",
+      "details": "",
+      "background": [
+        "EQVAE"
+      ]
+    },
+    {
+      "id": "bg_si_0",
+      "kind": "concept",
+      "label": "SI",
+      "short": "",
+      "details": "",
+      "background": [
+        "SI"
+      ]
+    },
+    {
+      "id": "bg_si_1",
+      "kind": "concept",
+      "label": "Stochastic interpolant",
+      "short": "",
+      "details": "",
+      "background": [
+        "SI"
+      ]
+    },
+    {
+      "id": "bg_si_2",
+      "kind": "concept",
+      "label": "Stochastic interpolant models",
+      "short": "",
+      "details": "",
+      "background": [
+        "SI"
+      ]
+    },
+    {
+      "id": "bg_si_4",
+      "kind": "concept",
+      "label": "stochastic interpolant models",
+      "short": "",
+      "details": "",
+      "background": [
+        "SI"
+      ]
+    },
+    {
+      "id": "bg_nfe_0",
+      "kind": "concept",
+      "label": "NFE",
+      "short": "",
+      "details": "",
+      "background": [
+        "NFE"
+      ]
+    },
+    {
+      "id": "bg_nfe_1",
+      "kind": "concept",
+      "label": "number of function evaluations",
+      "short": "",
+      "details": "",
+      "background": [
+        "NFE"
+      ]
+    },
+    {
+      "id": "bg_precisionrecall_0",
+      "kind": "concept",
+      "label": "precision",
+      "short": "Precision is the fraction of generated samples whose features fall in neighbourhoods of real-data features.",
+      "details": "Higher precision indicates more realistic generated samples under the chosen feature representation. Appendix E constructs neighbourhood radii using $k=3$ nearest neighbours in image-feature space.",
+      "background": [
+        "PrecisionRecall"
+      ]
+    },
+    {
+      "id": "bg_precisionrecall_1",
+      "kind": "concept",
+      "label": "recall",
+      "short": "Recall is the fraction of real samples whose features fall in neighbourhoods of generated-sample features.",
+      "details": "Higher recall indicates that generated samples cover more of the real-data variation under the chosen feature representation. Appendix E constructs neighbourhood radii using $k=3$ nearest neighbours in image-feature space.",
+      "background": [
+        "PrecisionRecall"
+      ]
+    },
+    {
+      "id": "bg_precisionrecall_2",
+      "kind": "concept",
+      "label": "Precision",
+      "short": "Precision is the fraction of generated samples whose features fall in neighbourhoods of real-data features.",
+      "details": "Higher precision indicates more realistic generated samples under the chosen feature representation. Appendix E constructs neighbourhood radii using $k=3$ nearest neighbours in image-feature space.",
+      "background": [
+        "PrecisionRecall"
+      ]
+    },
+    {
+      "id": "bg_precisionrecall_3",
+      "kind": "concept",
+      "label": "Recall",
+      "short": "Recall is the fraction of real samples whose features fall in neighbourhoods of generated-sample features.",
+      "details": "Higher recall indicates that generated samples cover more of the real-data variation under the chosen feature representation. Appendix E constructs neighbourhood radii using $k=3$ nearest neighbours in image-feature space.",
+      "background": [
+        "PrecisionRecall"
+      ]
+    },
+    {
+      "id": "bg_precisionrecall_4",
+      "kind": "concept",
+      "label": "Pr.",
+      "short": "Precision is the fraction of generated samples whose features fall in neighbourhoods of real-data features.",
+      "details": "Higher precision indicates more realistic generated samples under the chosen feature representation. Appendix E constructs neighbourhood radii using $k=3$ nearest neighbours in image-feature space.",
+      "background": [
+        "PrecisionRecall"
+      ]
+    },
+    {
+      "id": "bg_precisionrecall_5",
+      "kind": "concept",
+      "label": "Re.",
+      "short": "Recall is the fraction of real samples whose features fall in neighbourhoods of generated-sample features.",
+      "details": "Higher recall indicates that generated samples cover more of the real-data variation under the chosen feature representation. Appendix E constructs neighbourhood radii using $k=3$ nearest neighbours in image-feature space.",
+      "background": [
+        "PrecisionRecall"
+      ]
+    },
+    {
+      "id": "bg_bicubic_0",
+      "kind": "concept",
+      "label": "bicubic interpolation",
+      "short": "",
+      "details": "",
+      "background": [
+        "Bicubic"
+      ]
+    },
+    {
+      "id": "bg_iid_0",
+      "kind": "concept",
+      "label": "i.i.d.",
+      "short": "",
+      "details": "",
+      "background": [
+        "IID",
+        "Normal"
+      ]
+    },
+    {
+      "id": "bg_fid_0",
+      "kind": "concept",
+      "label": "Fréchet distance",
+      "short": "",
+      "details": "",
+      "background": [
+        "FID",
+        "GaussianFeatures"
+      ]
+    },
+    {
+      "id": "roms_method",
+      "kind": "concept",
+      "label": "ROMS-IMLE",
+      "short": "The paper's robust multi-stage version of IMLE.",
+      "details": "It combines direct supervision at every generator resolution with a robust optimization loss. Round-trip rejection is an additional inference-time option for the latent-space model.",
+      "background": [
+        "IMLE",
+        "Robust"
+      ]
+    },
+    {
+      "id": "l2",
+      "kind": "operator",
+      "label": "$\\ell_2$",
+      "short": "",
+      "details": "",
+      "background": [
+        "L2"
+      ]
+    },
+    {
+      "id": "stage_parameters_1",
+      "kind": "symbol",
+      "label": "$\\theta^{1}$",
+      "short": "Trainable parameters belonging to generator stage $1$.",
+      "details": "This is one component of the full parameter tuple. It controls this resolution stage rather than the entire generator.",
+      "background": []
+    },
+    {
+      "id": "stage_parameters_L",
+      "kind": "symbol",
+      "label": "$\\theta^{L}$",
+      "short": "Trainable parameters belonging to generator stage $L$.",
+      "details": "This is one component of the full parameter tuple. It controls this resolution stage rather than the entire generator.",
+      "background": []
+    },
+    {
+      "id": "nearest_distance",
+      "kind": "operator",
+      "label": "$\\min$",
+      "short": "$\\min_{j\\in[m]}$ returns the smallest candidate distance for real example $\\mathbf{x}_i$.",
+      "details": "The compared values are $d(\\mathbf{x}_i,f_\\theta(\\mathbf{z}_j))$ for $j\\in[m]=\\{1,\\ldots,m\\}$. This returns a distance, whereas the later matching step stores the minimizing index as $\\sigma(i)$.",
+      "background": [
+        "Minimum"
+      ]
+    },
+    {
+      "id": "generator_composed",
+      "kind": "symbol",
+      "label": "$f_\\theta$",
+      "short": "The ROMS generator $f_\\theta$ maps latent code $\\mathbf{z}$ to its output through $L$ resolution stages.",
+      "details": "Here the chosen architecture is written $f_\\theta=f_{\\theta^L}\\circ\\cdots\\circ f_{\\theta^1}$, where $\\theta=(\\theta^1,\\ldots,\\theta^L)$ collects stage parameters. Intermediate predictions $\\tilde{\\mathbf{x}}^l$ receive direct training losses; generation follows one forward pass. Outputs are images for pixel models and encoded-image latent maps for ImageNet.",
+      "background": [
+        "Composition"
+      ]
+    },
+    {
+      "id": "generator_parameters",
+      "kind": "symbol",
+      "label": "$\\theta$",
+      "short": "$\\theta=(\\theta^1,\\ldots,\\theta^L)$ collects the trainable parameters of the generator stages.",
+      "details": "The stage parameters $\\theta^l$ belong to block $f_{\\theta^l}$. Algorithm 1 updates the full tuple using $\\theta\\gets\\theta-(\\eta/L)\\nabla_\\theta\\mathcal{J}$, where $\\eta$ is the learning rate and $\\mathcal{J}$ sums minibatch mean stage losses.",
+      "background": [
+        "Gradient"
+      ]
+    },
+    {
+      "id": "stage_example",
+      "kind": "symbol",
+      "label": "$\\mathbf{x}_i$",
+      "short": "$\\mathbf{x}_i$ is the real example that supplies the stage targets for its matched latent code.",
+      "details": "For each stage $l$, prediction $\\tilde{\\mathbf{x}}_{\\sigma(i)}^l$ is compared with $K_l(\\mathbf{x}_i)$. Appendix D clarifies the ImageNet shorthand: the real image is first encoded with the frozen encoder, and its latent map is then downsampled.",
+      "background": []
+    }
+  ],
+  "background": {
+    "IMLE": {
+      "label": "Implicit Maximum Likelihood Estimation",
+      "short": "Implicit Maximum Likelihood Estimation (IMLE) trains a generator $f_\\theta$ by matching every real example $\\mathbf{x}_i$ to a nearby generated sample $f_\\theta(\\mathbf{z}_j)$.",
+      "details": "Draw $m$ latent codes $\\mathbf{z}_j$ from prior $\\pi$, then choose $\\sigma(i)=\\arg\\min_{j\\in\\{1,\\ldots,m\\}}d(\\mathbf{x}_i,f_\\theta(\\mathbf{z}_j))$ for each real example $i$. Here $d$ is a distance and $\\sigma(i)$ the selected index. Hold these assignments while updating parameters $\\theta$ to reduce the matched distances, then resample and repeat. Every real example contributes a loss, encouraging coverage. At generation time, draw a fresh latent code $\\mathbf{z}\\sim\\pi$ and evaluate $f_\\theta(\\mathbf{z})$. The original IMLE result relates this objective to maximum likelihood under stated conditions; arbitrary distances do not automatically give exact maximum likelihood.",
+      "link": "https://arxiv.org/abs/1809.09087",
+      "background": [
+        "Argmin"
+      ]
+    },
+    "FID": {
+      "label": "Fréchet Inception Distance",
+      "short": "FID compares the means and covariances of real and generated image features; lower values are better.",
+      "details": "It summarizes distributional similarity in a pretrained image feature space. It does not independently measure sample fidelity and coverage, and comparisons depend on the feature extractor and evaluation protocol. The paper evaluates with 50,000 generated images.",
+      "link": "https://arxiv.org/abs/1706.08500",
+      "background": [
+        "GaussianFeatures"
+      ]
+    },
+    "Normal": {
+      "label": "Standard multivariate normal distribution",
+      "short": "A continuous distribution on $\\mathbb{R}^D$ with zero mean and identity covariance.",
+      "details": "For latent vector $\\mathbf{z}=(z_1,\\ldots,z_D)$, the density is $p(\\mathbf{z})=(2\\pi)^{-D/2}\\exp(-\\sum_{k=1}^D z_k^2/2)$ on $\\mathbb{R}^D$. Here $D$ is the dimension, $k$ indexes coordinates, and $\\pi$ is the circle constant, distinct from the prior-distribution symbol. Coordinates are independent with mean zero and variance one; $\\mathbf{I}$ denotes identity covariance.",
+      "link": "https://en.wikipedia.org/wiki/Multivariate_normal_distribution",
+      "background": [
+        "ExponentialFunction",
+        "MatrixNotation"
+      ]
+    },
+    "Uniform": {
+      "label": "Continuous uniform distribution",
+      "short": "A continuous distribution assigning equal density to every point in a finite interval.",
+      "details": "On $(0,T]$ with endpoint $T>0$, the density is $p(t)=1/T$ for $0<t\\le T$ and zero elsewhere. Equal-length subintervals have equal probability. The time variable $t$ here is an interpolation time, not an outer optimization round.",
+      "link": "https://en.wikipedia.org/wiki/Continuous_uniform_distribution"
+    },
+    "Expectation": {
+      "label": "Expectation",
+      "short": "An expectation averages a quantity over the random variables named below the operator.",
+      "details": "For a discrete variable, the expectation is the sum of each value times its probability; for a continuous variable, it is the integral of the value times its density. Training approximates such averages using sampled examples.",
+      "link": "https://en.wikipedia.org/wiki/Expected_value"
+    },
+    "Argmin": {
+      "label": "Argument of the minimum",
+      "short": "The argument of the minimum returns an input or index attaining the smallest objective value.",
+      "details": "Unlike a minimum, which is a value, an argument of the minimum identifies where that value occurs. Here it selects either model parameters or the nearest generated candidate, depending on its subscript.",
+      "link": "https://en.wikipedia.org/wiki/Arg_max"
+    },
+    "Composition": {
+      "label": "Function composition",
+      "short": "Composition applies the rightmost function first and passes its output to the next function.",
+      "details": "For functions $a$ and $b$, $(a\\circ b)(z)=a(b(z))$. A stack of distinct network blocks can therefore be one forward pass even though it contains several composed transformations.",
+      "link": "https://en.wikipedia.org/wiki/Function_composition"
+    },
+    "Gradient": {
+      "label": "Gradient",
+      "short": "A gradient collects partial derivatives of a scalar loss with respect to the variable being changed.",
+      "details": "For loss $\\mathcal{J}$ and parameters $\\theta$, $\\nabla_\\theta\\mathcal{J}$ guides the parameter update. A gradient can instead be taken with respect to a generated sample: for residual vector $\\mathbf{r}$, squared error has derivative $\\nabla_{\\mathbf{r}}\\|\\mathbf{r}\\|_2^2=2\\mathbf{r}$. This explains why large mismatches can dominate training.",
+      "link": "https://en.wikipedia.org/wiki/Gradient"
+    },
+    "Robust": {
+      "label": "Robust loss",
+      "short": "A robust loss limits the influence of unusually large residuals on parameter updates.",
+      "details": "A residual is a prediction minus its target. Squared error gives large residuals proportionally large gradients; the paper replaces it with less rapidly growing penalties to reduce damage from accidental poor matches.",
+      "link": "https://arxiv.org/abs/1701.03077"
+    },
+    "LPIPS": {
+      "label": "Learned Perceptual Image Patch Similarity",
+      "short": "LPIPS compares images through learned visual features instead of raw pixel differences alone.",
+      "details": "The paper uses it for pixel-space nearest-neighbour selection, as one term in pixel-space optimization, and to measure the image round-trip reconstruction cost. These are distinct uses of the same perceptual comparison.",
+      "link": "https://arxiv.org/abs/1801.03924"
+    },
+    "GaussianFeatures": {
+      "label": "Multivariate normal distribution",
+      "short": "A continuous distribution on a real vector space, parameterized by its mean and covariance.",
+      "details": "For a vector $x$ with $D$ real coordinates, mean vector $\\mu$, and positive-definite covariance matrix $\\Sigma$, the density on $\\mathbb{R}^D$ is $(2\\pi)^{-D/2}|\\Sigma|^{-1/2}\\exp[-(x-\\mu)^\\top\\Sigma^{-1}(x-\\mu)/2]$. Here $\\pi$ is the circle constant. The mean sets the center; the covariance sets the spread and dependence between coordinates.",
+      "link": "https://en.wikipedia.org/wiki/Multivariate_normal_distribution",
+      "background": [
+        "ExponentialFunction",
+        "MatrixNotation"
+      ]
+    },
+    "ExponentialFunction": {
+      "label": "Exponential function",
+      "short": "$\\exp(u)=e^u$ is the exponential function; $e$ is Euler's number.",
+      "details": "The real input $u$ is dimensionless. The function is positive, equals one at zero, and is its own derivative. In a normal density it turns a negative squared distance into a positive density factor.",
+      "link": "https://en.wikipedia.org/wiki/Exponential_function"
+    },
+    "MatrixNotation": {
+      "label": "Matrix notation in normal densities",
+      "short": "A covariance matrix records variances on its diagonal and pairwise covariances elsewhere.",
+      "details": "$I$ is the identity matrix. For a covariance matrix $\\Sigma$, $|\\Sigma|$ is its determinant and $\\Sigma^{-1}$ its inverse; $v^\\top$ transposes a column vector $v$. Positive definiteness means $v^\\top\\Sigma v>0$ for every nonzero $v$, ensuring an ordinary full-dimensional normal density exists.",
+      "link": "https://en.wikipedia.org/wiki/Covariance_matrix"
+    },
+    "GemanMcClure": {
+      "label": "Geman-McClure loss",
+      "short": "Geman-McClure is a bounded residual penalty: sufficiently large errors have decreasing influence on the update.",
+      "details": "A standard form is $\\rho(r)=r^2/(r^2+c^2)$, where $r$ is one prediction-minus-target residual and $c>0$ is a scale. Its derivative $\\rho^{\\prime}(r)=2rc^2/(r^2+c^2)^2$ tends to zero for large $|r|$. Normalizations vary; ROMS-IMLE does not specify its exact scale or normalization.",
+      "link": "https://arxiv.org/abs/1701.03077",
+      "background": [
+        "Robust"
+      ]
+    },
+    "CauchyLoss": {
+      "label": "Cauchy loss",
+      "short": "A robust residual penalty with logarithmic growth for large errors.",
+      "details": "A standard form is $\\rho(r)=c^2\\log(1+(r/c)^2)$, with residual $r$ and scale $c>0$. Its derivative $2r/(1+(r/c)^2)$ decreases in magnitude for sufficiently large $|r|$. This describes a loss, not a specified residual distribution; the manuscript does not give its scale or normalization.",
+      "link": "https://arxiv.org/abs/1701.03077",
+      "background": [
+        "Robust"
+      ]
+    },
+    "PseudoHuber": {
+      "label": "Pseudo-Huber loss",
+      "short": "A smooth robust penalty that is approximately quadratic near zero and linear for large errors.",
+      "details": "A standard form is $\\rho(r)=c^2(\\sqrt{1+(r/c)^2}-1)$, where $r$ is a residual and $c>0$ a scale. Its derivative $r/\\sqrt{1+(r/c)^2}$ approaches magnitude $c$ for large errors. Thus large-error influence is bounded, rather than vanishing; the manuscript does not give the scale.",
+      "link": "https://arxiv.org/abs/1701.03077",
+      "background": [
+        "Robust"
+      ]
+    },
+    "AdaIN": {
+      "label": "Adaptive Instance Normalization",
+      "short": "AdaIN normalizes each feature channel and applies style-dependent scale and shift.",
+      "details": "It lets a style representation control channel statistics. In this generator, the mapped input latent code supplies the style information used to modulate the decoder.",
+      "link": "https://arxiv.org/abs/1703.06868"
+    },
+    "DINO": {
+      "label": "Self-distillation with no labels",
+      "short": "DINO learns visual representations by training a student to match a teacher on different views of an image without class labels.",
+      "details": "The teacher is updated from the student during representation learning. Here DINO supplies pretrained image features for a training-loss component; its original representation-learning objective is distinct from the generator loss.",
+      "link": "https://arxiv.org/abs/2104.14294"
+    },
+    "EQVAE": {
+      "label": "EQ-VAE",
+      "short": "An image encoder-decoder whose latent space is regularized for consistency under image transformations.",
+      "details": "The cited model improves the structure of encoded image representations. ROMS-IMLE keeps it frozen, generates maps in its latent space, and decodes those maps into images. These maps differ from the random latent codes fed into the generator.",
+      "link": "https://arxiv.org/abs/2502.09509"
+    },
+    "SI": {
+      "label": "Stochastic interpolant",
+      "short": "A stochastic interpolant defines random intermediate states $\\mathbf{x}_t$ between clean endpoint $\\mathbf{x}_0$ and noise endpoint $\\mathbf{x}_T$.",
+      "details": "The paper writes their conditional law as $q_t(\\mathbf{x}_t\\mid\\mathbf{x}_0,\\mathbf{x}_T)$, where $t$ indexes interpolation time. It groups diffusion and flow matching under this framework. Training supervises predictions at intermediate states; the proposed generator transfers that idea to resolution index $l$, using targets $K_l(\\mathbf{x}_i)$ for real example $\\mathbf{x}_i$.",
+      "link": "https://arxiv.org/abs/2209.15571"
+    },
+    "NFE": {
+      "label": "Number of function evaluations",
+      "short": "NFE counts generator or denoising-model evaluations for a candidate sample under the reported sampling procedure.",
+      "details": "It is not a count of neural layers or a complete compute budget. Encoder/decoder work and discarded candidates can add cost beyond the one generator evaluation reported for a ROMS-IMLE candidate.",
+      "link": "https://arxiv.org/abs/2607.19332v2"
+    },
+    "PrecisionRecall": {
+      "label": "Generative precision and recall",
+      "short": "Precision estimates generated-sample fidelity; recall estimates coverage of real-data variation.",
+      "details": "Neighbourhoods around feature vectors approximate the sets occupied by each distribution. Precision is the fraction of generated features within real-data neighbourhoods; recall is the fraction of real features within generated-data neighbourhoods. Both lie between zero and one; results depend on the feature extractor and neighbourhood size.",
+      "link": "https://arxiv.org/abs/1904.06991"
+    },
+    "L2": {
+      "label": "Euclidean norm",
+      "short": "For a residual vector $\\mathbf{r}=(r_1,\\ldots,r_D)$, the Euclidean norm is $\\|\\mathbf{r}\\|_2=(\\sum_{k=1}^D r_k^2)^{1/2}$.",
+      "details": "Here $D$ counts coordinates and $k$ indexes them. Squared distance is $\\|\\mathbf{r}\\|_2^2=\\sum_k r_k^2$; its gradient is $2\\mathbf{r}$. The unsquared norm has gradient $\\mathbf{r}/\\|\\mathbf{r}\\|_2$ for nonzero $\\mathbf{r}$. Averaging squared residuals additionally divides by $D$.",
+      "link": "https://en.wikipedia.org/wiki/Euclidean_distance",
+      "background": [
+        "Gradient"
+      ]
+    },
+    "Bicubic": {
+      "label": "Bicubic interpolation",
+      "short": "Bicubic interpolation estimates values on a resized two-dimensional grid using local cubic interpolation.",
+      "details": "It supplies lower-resolution image or latent targets here. Exact boundary handling and sampling conventions depend on the implementation; the appendix specifies the default PyTorch resizing implementation.",
+      "link": "https://en.wikipedia.org/wiki/Bicubic_interpolation"
+    },
+    "IID": {
+      "label": "Independent and identically distributed",
+      "short": "The samples are independent draws from the same distribution.",
+      "details": "Independence means one draw does not change the probabilities for another. The common distribution in the training algorithm is the standard normal input latent code prior.",
+      "link": "https://en.wikipedia.org/wiki/Independent_and_identically_distributed_random_variables",
+      "background": [
+        "Normal"
+      ]
+    },
+    "Minimum": {
+      "label": "Minimum",
+      "short": "A minimum is the smallest value in the set being compared.",
+      "details": "It returns a value rather than the index or input at which that value occurs. In the nearest-candidate objective the minimum is taken over a finite pool.",
+      "link": "https://en.wikipedia.org/wiki/Maxima_and_minima"
+    }
+  }
+}

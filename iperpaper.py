@@ -13,13 +13,14 @@ import subprocess
 import tempfile
 import unicodedata
 from pathlib import Path
+from dataclasses import dataclass
 from typing import Any
 
 from pybtex.database import Person, parse_file
 from pybtex.exceptions import PybtexError
 from pybtex.richtext import Text
-from pypdf import PdfReader
-from pypdf.generic import ContentStream
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import ContentStream, RectangleObject
 
 from bib_utils import enrich_bibliography_entry
 from iperpaper_native_html import (
@@ -2542,13 +2543,21 @@ def _svg_dimensions_as_points(svg: str) -> str:
     return svg[: root.start()] + updated + svg[root.end() :]
 
 
+@dataclass(frozen=True)
+class _MathSvg:
+    """Store a formula image and its baseline depth in PDF points."""
+
+    src: str
+    depth: float
+
+
 def _render_math_svgs(
     source: Path,
     annotations: dict[str, Any],
     main: str | None = None,
-) -> dict[tuple[str, bool, bool], str]:
+) -> dict[tuple[str, bool, bool], _MathSvg]:
     """
-    Render annotation math fragments as embedded SVG data URLs.
+    Render annotation math fragments with their TeX baseline measurements.
 
     Args:
         source: TeX source file or project directory.
@@ -2556,13 +2565,12 @@ def _render_math_svgs(
         main: Optional main TeX path relative to a project directory.
 
     Returns:
-        dict[tuple[str, bool, bool], str]: SVG data URLs keyed by math fragment attributes.
+        dict[tuple[str, bool, bool], _MathSvg]: Images and baseline depths keyed by fragment.
     """
     fragments = _collect_math_fragments(annotations)
     if not fragments:
         return {}
 
-    pdfcrop = require_pdfcrop()
     pdftocairo = require_pdftocairo()
     project_root, preamble = _paper_preamble(source, main)
 
@@ -2572,6 +2580,9 @@ def _render_math_svgs(
         body: list[str] = [
             preamble,
             "\n\\pagestyle{empty}\n\\begin{document}\n",
+            "\\newbox\\iperpapermathbox\n"
+            "\\newwrite\\iperpapermathmetrics\n"
+            "\\immediate\\openout\\iperpapermathmetrics=\\jobname.metrics\n",
         ]
         for index, (fragment, display, bold) in enumerate(fragments, start=1):
             style = r"\displaystyle " if display else ""
@@ -2579,7 +2590,19 @@ def _render_math_svgs(
             math = f"\\({style}{fragment}\\)"
             if bold:
                 math = "{\\boldmath" + math + "}"
-            body.append(f"\\thispagestyle{{empty}}\\noindent\\mbox{{{math}}}\n")
+            # Save the baseline position at shipout; freeze box dimensions now
+            # because subsequent fragments reuse the same box register.
+            body.append(
+                f"\\setbox\\iperpapermathbox=\\hbox{{{math}}}\n"
+                "\\thispagestyle{empty}\\noindent\\pdfsavepos\n"
+                "\\edef\\iperpaperwritemetrics{\\write\\iperpapermathmetrics{"
+                "\\noexpand\\the\\noexpand\\pdflastxpos,"
+                "\\noexpand\\the\\noexpand\\pdflastypos,"
+                "\\number\\wd\\iperpapermathbox,"
+                "\\number\\ht\\iperpapermathbox,"
+                "\\number\\dp\\iperpapermathbox}}%\n"
+                "\\iperpaperwritemetrics\\box\\iperpapermathbox\n"
+            )
             if index != len(fragments):
                 body.append("\\newpage\n")
         body.append("\\end{document}\n")
@@ -2587,31 +2610,36 @@ def _render_math_svgs(
 
         pdf_path = _run_latexmk(tex_path, project_root, work)
         cropped_pdf = work / "iperpaper-tooltip-math-cropped.pdf"
-        crop_proc = subprocess.run(
-            [pdfcrop, "--margins", "1", str(pdf_path), str(cropped_pdf)],
-            cwd=project_root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        if crop_proc.returncode != 0 or not cropped_pdf.is_file():
-            details = (crop_proc.stdout + "\n" + crop_proc.stderr).strip()
-            raise RuntimeError(f"pdfcrop failed while preparing annotation math:\n{details[-4000:]}")
-
-        page_count = len(PdfReader(str(cropped_pdf)).pages)
-        if page_count != len(fragments):
+        pages = PdfReader(str(pdf_path)).pages
+        metrics = tex_path.with_suffix(".metrics").read_text(encoding="ascii").splitlines()
+        if len(pages) != len(fragments) or len(metrics) != len(fragments):
             raise RuntimeError(
-                "Annotation math rendering produced an unexpected number of pages: "
-                f"expected {len(fragments)}, got {page_count}"
+                "Annotation math rendering produced an unexpected number of pages or metrics: "
+                f"expected {len(fragments)}, got {len(pages)} pages and {len(metrics)} metrics"
             )
+        writer = PdfWriter()
+        depths: list[float] = []
+        for page, metric in zip(pages, metrics):
+            # TeX uses 65536 sp/pt and 72.27 pt/in; PDF uses 72 bp/in.
+            x, y, width, height, depth = (
+                int(value) / 65536 * 72 / 72.27 for value in metric.split(",")
+            )
+            page.mediabox = RectangleObject((x - 1, y - depth - 1, x + width + 1, y + height + 1))
+            page.cropbox = page.mediabox
+            writer.add_page(page)
+            depths.append(depth + 1)
+        writer.write(str(cropped_pdf))
 
-        rendered: dict[tuple[str, bool, bool], str] = {}
+        rendered: dict[tuple[str, bool, bool], _MathSvg] = {}
         for index, key in enumerate(fragments, start=1):
             svg_path = work / f"math-{index}.svg"
             svg_proc = subprocess.run(
                 [
                     pdftocairo,
                     "-svg",
+                    "-origpagesizes",
+                    "-noshrink",
+                    "-nocenter",
                     "-f",
                     str(index),
                     "-l",
@@ -2632,13 +2660,13 @@ def _render_math_svgs(
                 )
             svg = _svg_dimensions_as_points(svg_path.read_text(encoding="utf-8"))
             payload = base64.b64encode(svg.encode("utf-8")).decode("ascii")
-            rendered[key] = f"data:image/svg+xml;base64,{payload}"
+            rendered[key] = _MathSvg(f"data:image/svg+xml;base64,{payload}", depths[index - 1])
         return rendered
 
 
 def _rich_text_html(
     text: str,
-    math_svgs: dict[tuple[str, bool, bool], str],
+    math_svgs: dict[tuple[str, bool, bool], _MathSvg],
     *,
     bold_math: bool = False,
 ) -> str:
@@ -2647,7 +2675,7 @@ def _rich_text_html(
 
     Args:
         text: Annotation text containing prose and TeX math.
-        math_svgs: Pre-rendered math SVG data URLs keyed by fragment attributes.
+        math_svgs: Pre-rendered images and baseline depths keyed by fragment attributes.
         bold_math: Whether to select bold renderings for math fragments.
 
     Returns:
@@ -2658,20 +2686,21 @@ def _rich_text_html(
         if kind == "text":
             output.append(html.escape(content).replace("\n", "<br>"))
             continue
-        src = math_svgs.get((content, display, bold_math))
-        if not src:
+        rendered = math_svgs.get((content, display, bold_math))
+        if not rendered:
             output.append(html.escape(content))
             continue
         class_name = "ip-math ip-math-display" if display else "ip-math"
         alt = html.escape(content, quote=True)
-        output.append(f'<img class="{class_name}" src="{src}" alt="{alt}">')
+        alignment = "" if display else f' style="vertical-align:{-rendered.depth:.6f}pt"'
+        output.append(f'<img class="{class_name}" src="{rendered.src}" alt="{alt}"{alignment}>')
     return "".join(output)
 
 
 def _rich_text_html_with_bold_substring(
     text: str,
     bold_text: str,
-    math_svgs: dict[tuple[str, bool, bool], str],
+    math_svgs: dict[tuple[str, bool, bool], _MathSvg],
 ) -> str:
     """
     Render rich text while bolding one plain-text substring.
@@ -2679,7 +2708,7 @@ def _rich_text_html_with_bold_substring(
     Args:
         text: Annotation text containing prose and TeX math.
         bold_text: Plain-text substring to emphasize after punctuation normalization.
-        math_svgs: Pre-rendered math SVG data URLs.
+        math_svgs: Pre-rendered images and baseline depths.
 
     Returns:
         str: Escaped HTML with the requested substring wrapped in ``strong``.
