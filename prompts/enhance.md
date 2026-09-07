@@ -1,37 +1,17 @@
-You are preparing an IperPaper-enhanced scientific paper.
+# Annotation quality and format
 
-Produce these TWO authored artifacts:
-
-1. annotated LaTeX source, either a single `.tex` file or a complete multi-file TeX project;
-2. an annotation metadata JSON file.
-
-Do not embed the TeX source inside JSON.
-
-Within this repository, use one workspace per paper:
-
-- preserve distinct unmodified source material in `papers/<paper-stem>/original/`;
-- place the annotated TeX file or project in `papers/<paper-stem>/annotated/`;
-- place annotation/citation JSON beside the annotated source in `papers/<paper-stem>/annotated/`, place both HTML readers directly in `papers/<paper-stem>/`, and place the compiled PDF there only when it is explicitly requested with `--pdf-output`;
-- when there is no distinct original because the paper is authored directly as annotated TeX, keep only the canonical TeX in `annotated/` rather than duplicating it.
-
-## Prefer recoverable original source
-
-If the user supplied a PDF or paper URL, do not immediately reconstruct LaTeX from the PDF.
-
-- Inspect the paper for an identifier/version, especially an arXiv identifier such as `arXiv:YYMM.NNNNNv2`.
-- Search for publicly available original TeX/source matching the exact paper and revision when source access is available.
-- Prefer the exact matching arXiv source archive when available; otherwise use a clearly matching author/project repository or official source package.
-- Verify title, authors, version/date when available, section structure, equations, figures, and appendices before using recovered source.
-- Do not silently substitute another version.
+Use this specification when creating or editing authored annotations. Produce an
+annotated TeX file or project and a separate annotations JSON file; never embed
+the complete TeX document in JSON. Repository layout, source acquisition, metadata
+reuse, build commands, dependencies, and reporting are defined in
+[AGENTS.md](../AGENTS.md).
 
 ## Annotated TeX artifact
 
-Preserve a self-contained paper as one annotated `.tex` file. Preserve a source archive/project as a project:
-
-- keep relative paths and `\input` / `\include` structure when practical;
-- keep source files, figures/images, bibliography files, styles/classes, and other resources needed to compile the paper;
-- preserve scientific content, order, labels, references, citations, macros, environments, figures, captions, tables, and appendices;
-- do not rewrite, summarize, translate, normalize, or reformat the paper except where an IperPaper wrapper or required package/setup is inserted.
+Preserve scientific content, order, labels, references, citations, macros,
+environments, figures, captions, tables, and appendices. Do not rewrite, summarize,
+translate, normalize, or reformat the paper except to insert annotation wrappers
+or required package/setup code. Follow the project-preservation rules in AGENTS.md.
 
 Make sure `xcolor` and `hyperref` are available. Reuse the paper's existing package setup when possible; do not duplicate package loads with conflicting options.
 
@@ -69,11 +49,12 @@ Each annotation object contains these string fields:
 - `details`: concise deeper explanation including role, intuition, domain/units when relevant, and nearby equation/prose connections, or an empty string to reuse the first background entry's `details`.
 
 Each annotation object also contains a `background` field: a list of background keys
-relevant to that annotation. It may be empty when no shared background is useful.
+relevant to that annotation, without duplicate keys. It may be empty when no shared
+background is useful.
 
 When an annotation's `short` and/or `details` is an empty string, the reader
 substitutes the corresponding text from the **first** key in its `background`
-list, and does not repeat that entry as a separate block below. This lets a
+list when that list is nonempty, and does not repeat that entry as a separate block below. This lets a
 pure-background annotation (for example, one whose only job is to explain
 "$\Exp$" itself) contain no text of its own. Validation fails if `short`,
 `details`, and `background` are all empty, because such an annotation would show
@@ -102,6 +83,11 @@ appear in multiple annotations. Each key maps to an object with these fields:
   additional labeled blocks below this one, so every symbol used in an explanation
   is itself explained.
 
+Background expansion is one level deep: dependencies of the annotation's directly
+listed entries are shown, but their dependencies are not recursively expanded.
+List any deeper prerequisites directly on the annotation when needed. Background
+entries cannot reference themselves; keep dependencies free of cycles.
+
 For probability distributions, the explanation must state:
 
 - whether the distribution is discrete or continuous;
@@ -110,6 +96,7 @@ For probability distributions, the explanation must state:
 
 ```json
 {
+  "title": "Exponential race example",
   "background": {
     "Exp": {
       "short": "An exponential distribution is a continuous probability distribution on the nonnegative real numbers, controlled by a positive rate parameter $\\lambda$.",
@@ -137,6 +124,12 @@ For probability distributions, the explanation must state:
 
 Rules:
 
+- Include background that helps explain the current target, equation, or
+  explanation, including its mathematical role even when the tooltip does not
+  name the concept. Keep REINFORCE for an advantage weighting its policy-gradient
+  update; omit categorical/NLL background from a critic overview that does not
+  use those details. Broader topical association alone is insufficient. Do not
+  expand an explanation merely to justify an unnecessary background entry.
 - Every relevant probability distribution, acronym, named operator, or recurring
   concept used by an annotation must have a background entry, and the annotation
   must list its key in its `background` field.
@@ -145,13 +138,16 @@ Rules:
   paper-specific annotation covers an occurrence, add one targeting it in the TeX
   (for example, wrapping the symbol `\Exp` itself). Such background-only
   annotations may leave `short` and `details` empty so the reader reuses the
-  background text directly instead of showing it twice.
+  background text directly instead of showing it twice. This coverage requirement
+  does not mean attaching that background to every nearby annotation.
 - The same background key is reused by every annotation that needs it; do not
   duplicate the explanation inside each annotation.
 - Background keys use only letters, digits, `.`, `_`, or `-`, and should be short,
   stable identifiers such as `Exp`, `KL`, or `PCG64`.
 - Use `label` for a readable background heading when the stable key is a compound
   identifier such as `GammaFunction`; do not put spaces in the key.
+- Supply a Wikipedia or other authoritative `link` for authored background entries,
+  even though the metadata format permits omitting it.
 - Every referenced key must exist in the `background` object; validation fails otherwise.
 - Keep each entry self-contained: when the annotation has its own text, the entry
   is shown below it in the detail panel, labeled with its key (linked when a
@@ -224,16 +220,18 @@ Table~\ref{tab:results}
 \cite{smith2024}
 ```
 
-During validation/build, IperPaper inspects the ordinary internal PDF links and generates reference overlays deterministically:
+The build generates tooltips from native PDF links: labeled equation source,
+rendered figures/tables with captions, and bibliography entries. Keep reachable
+labels inside standard numbered equation environments, figure/table labels and
+captions, and citations available through `thebibliography` or a classic
+BibTeX-generated `.bbl`. Preserve `.bib` databases and stable citation keys,
+including explicit title, author, and DOI fields used for citation lookup.
 
-- `\eqref{...}` and equation-targeting `\ref{...}` / `\autoref{...}` reuse the native link rectangle and show the resolved equation number plus the exact labeled equation body extracted from the TeX source;
-- figure-targeting `\ref{...}`, `\cref{...}`, and related native links show the compiled figure artwork together with its source caption; the preview defaults to 80% of the figure's printed width via `FIGURE_TOOLTIP_SCALE`;
-- table-targeting `\ref{...}`, `\cref{...}`, and related native links show the rendered table together with its source caption; they reuse `FIGURE_TOOLTIP_SCALE`, so their preview also defaults to 80% of the printed table width;
-- each native bibliography link created by `\cite{...}` or a citation variant reuses its own rectangle and shows the matching rendered bibliography label and entry;
-- repeated links to the same equation, figure, table, or citation key reuse generated metadata but keep every native rectangle;
-- equation, figure, and table clicks continue through the original PDF link; citations open a resolved external resource when available and otherwise continue to their native bibliography destination. Their source formatting and visible appearance remain unchanged.
-
-Keep equation labels inside standard numbered equation environments, keep figure and table labels associated with their captions, and preserve the paper's bibliography source or generated `.bbl`. In particular, retain referenced `.bib` databases and stable citation keys: their explicit title, author, and DOI fields support citation lookup, and the citation cache is keyed by the TeX/BibTeX key. If automatic extraction reports an unsupported reference, preserve the scientific source and report the limitation rather than inventing explicit reference metadata.
+Do not create authored `eqref_`, `figref_`, `tabref_`, or `bibref_` annotations.
+Original links retain their appearance. Equation, figure, and table links retain
+their native destinations; generated citations may open a resolved external
+resource, otherwise retaining their native bibliography destination. See AGENTS.md
+for handling extraction failures.
 
 ## Semantic identity and annotation-ID reuse
 
@@ -281,22 +279,14 @@ Prefer annotating `\mathcal L` and `\phi` separately over wrapping `\mathcal L(\
 
 Prioritize paper-specific notation and concepts that may block understanding. Use context from the whole paper/project to disambiguate symbols. Do not invent definitions; state ambiguity when the paper itself is ambiguous.
 
-## Final self-check
+## Final authoring checks
 
-- TeX remains normal compilable LaTeX with `xcolor` and `hyperref` available.
-- The robust `\iperpaper` wrapper is defined once after those packages are available, with the PDF-string fallback shown above.
-- Every IperPaper target uses `\iperpaper{ID}{...}` in prose or math.
-- Original paper links remain unmodified.
-- Metadata contains only `title`, `annotations`, and `background` at top level.
-- Every relevant distribution, acronym, or recurring concept used by an annotation has a background entry, and the annotation lists that key in its `background` field.
-- Every background key referenced by an annotation exists in the `background` object.
-- TeX notation inside explanation strings is wrapped in supported math delimiters and JSON backslashes are escaped.
-- Every annotation ID appears in at least one reachable TeX marker.
-- Every marker has matching metadata.
-- No annotation wrappers are nested.
-- Every reused annotation ID has the same semantic meaning at every target; same-looking notation with different roles uses different IDs.
-- Equation references, figure references, table references, and citations remain native TeX commands without `\iperpaper` wrappers or authored metadata.
-- Validation/build successfully generates their tooltips from native PDF links, labeled equation/figure/table source, figure/table artwork, and bibliography data.
-- Automatic equation, figure, table, and bibliography targets retain their original visible style. Equation, figure, and table targets retain their native click destinations; bibliography targets may open a resolved external resource and otherwise retain their native destination.
-- Referenced `.bib` databases and citation keys are preserved so citation metadata and cached links remain associated with the correct entries.
-- Multi-file structure and visible assets are preserved when available.
+- Audit compiled targets: every authored metadata ID must create at least one real
+  `iperpaper:` PDF link, and every such link must have matching metadata.
+- Check wrappers are not nested, and audit reused IDs using the semantic-identity
+  rule above.
+- Check metadata against the schema above, including existing background keys,
+  nonempty effective explanations, and correctly delimited/escaped TeX math.
+- Verify scientific content and original link styling/destinations are preserved,
+  and native references meet the compatibility requirements above.
+- Complete validation/build and reporting using the workflow in AGENTS.md.

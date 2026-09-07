@@ -415,6 +415,24 @@ def _transform_pandoc_ast(
         if node_type == "Math":
             value["c"][1] = _replace_math_annotation_hrefs(value["c"][1])
             return value
+        if node_type == "Figure":
+            attrs, caption, blocks = value["c"]
+            annotation = by_id.get(automatic_reference_id("figure", attrs[0]))
+            caption = walk(caption)
+            if annotation and caption[1]:
+                # Pandoc's HTML writer omits LaTeX figure counters. Use the
+                # compiled reference label, not HTML order (which includes
+                # nested subfigures and can differ from the PDF float order).
+                label = annotation.get("label", "")
+                first = caption[1][0]
+                if label and first.get("t") in {"Plain", "Para"}:
+                    first["c"] = [
+                        {"t": "Strong", "c": [{"t": "Str", "c": label + ":"}]},
+                        {"t": "Space"},
+                        *first["c"],
+                    ]
+            value["c"] = [attrs, caption, walk(blocks)]
+            return value
         if node_type == "Div":
             attrs, blocks = value["c"]
             if "thebibliography" in attrs[1] and has_generated_bibliography:
@@ -859,9 +877,14 @@ def _replace_native_tex_commands(text: str) -> str:
     text = re.sub(r"\\hspace\s*\*", lambda _match: r"\hspace", text)
     text = _strip_tex_environment(text, "adjustwidth", 2)
     text = _strip_tex_environment(text, "hyphenrules", 1)
-    text = _replace_tex_command_arguments(text, "raisebox", 2, lambda args: args[1])
-    for command in ("llap", "blap", "tlap", "hbox"):
-        text = _replace_tex_command_arguments(text, command, 1, lambda args: args[0])
+    text = _replace_tex_command_arguments(
+        text, "raisebox", 2, lambda args: rf"\raise {args[0]} {{{args[1]}}}"
+    )
+    # Keep horizontal overlap and translate the paper's zero-height vertical
+    # boxes before Pandoc can expand them into unsupported TeX primitives.
+    for command in ("blap", "tlap"):
+        text = re.sub(rf"\\{command}\b", lambda match: r"\iperpaper" + match[0][1:], text)
+    text = _replace_tex_command_arguments(text, "hbox", 1, lambda args: args[0])
     text = re.sub(r"\\vbox\s+to\s+[^\s{]+\s*", "", text)
     text = re.sub(r"\\vss\b", "", text)
     text = _replace_probability_macros(text)

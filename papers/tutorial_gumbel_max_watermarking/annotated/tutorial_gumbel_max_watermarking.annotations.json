@@ -4,17 +4,28 @@
     "Uniform": {
       "short": "$\\U(0,1)$ denotes the continuous uniform distribution on the unit interval $(0,1)$.",
       "details": "The continuous $\\U(0,1)$ distribution has constant density $f(u)=1$ for $0<u<1$, so intervals of equal length have equal probability. Its CDF is $F(u)=u$ on $0\\le u\\le1$, its mean is $1/2$, and its variance is $1/12$. Strict and non-strict inequalities have the same probability because the distribution is continuous.",
-      "link": "https://en.wikipedia.org/wiki/Continuous_uniform_distribution"
+      "link": "https://en.wikipedia.org/wiki/Continuous_uniform_distribution",
+      "background": [
+        "CDF"
+      ]
     },
     "Exp": {
       "short": "An exponential distribution is a continuous probability distribution on the nonnegative real numbers, controlled by a positive rate parameter $\\lambda$.",
       "details": "With rate $\\lambda>0$, its density is $f_Y(x)=\\lambda e^{-\\lambda x}$ and its survival function is $\\Pr(Y>x)=e^{-\\lambda x}$ for $x\\ge0$. Its mean is $1/\\lambda$, and it is memoryless: $\\Pr(Y>s+t\\mid Y>s)=\\Pr(Y>t)$. The inverse-transform identity $-\\log U\\sim\\Exp(1)$ holds for $U\\sim\\U(0,1)$, and if $E\\sim\\Exp(1)$ with $c>0$, then $E/c\\sim\\Exp(c)$.",
-      "link": "https://en.wikipedia.org/wiki/Exponential_distribution"
+      "link": "https://en.wikipedia.org/wiki/Exponential_distribution",
+      "background": [
+        "Uniform"
+      ]
     },
     "Gumbel": {
       "short": "A Gumbel distribution is a continuous probability distribution on the real line, often associated with random maxima.",
       "details": "The standard Gumbel distribution has CDF $\\Pr(G\\le g)=e^{-e^{-g}}$ for $g\\in\\mathbb R$ and density $f(g)=e^{-(g+e^{-g})}$. It belongs to the classical extreme-value family. Adding independent standard Gumbel noise to log-probabilities turns an argmax into an exact categorical sample (the Gumbel-max trick).",
-      "link": "https://en.wikipedia.org/wiki/Gumbel_distribution"
+      "link": "https://en.wikipedia.org/wiki/Gumbel_distribution",
+      "background": [
+        "CDF",
+        "Categorical",
+        "argmax"
+      ]
     },
     "CDF": {
       "short": "The cumulative distribution function (CDF) $F_X(x)=\\Pr(X\\le x)$ gives the probability that a random variable takes a value at most $x$.",
@@ -26,7 +37,8 @@
       "details": "Its density is $f(x)=\\lambda^k x^{k-1}e^{-\\lambda x}/\\Gamma(k)$ for $x\\ge0$, where $\\Gamma(k)$ is the Gamma function. When $k$ is a positive integer, a sum of $k$ independent exponential variables with common rate $\\lambda$ is Gamma distributed with shape $k$ and rate $\\lambda$; its mean is $k/\\lambda$ and its variance is $k/\\lambda^2$.",
       "link": "https://en.wikipedia.org/wiki/Gamma_distribution",
       "background": [
-        "GammaFunction"
+        "GammaFunction",
+        "Exp"
       ]
     },
     "GammaFunction": {
@@ -38,7 +50,10 @@
     "Beta": {
       "short": "A Beta distribution is a continuous probability distribution on the unit interval $(0,1)$ with two positive shape parameters.",
       "details": "This tutorial uses $\\Beta(a,1)$, whose density is $f(x)=a x^{a-1}$ for $0<x<1$ and whose CDF is $F(x)=x^{a}$ on $0\\le x\\le1$. It arises here as the conditional distribution of a selected uniform value under watermarking.",
-      "link": "https://en.wikipedia.org/wiki/Beta_distribution"
+      "link": "https://en.wikipedia.org/wiki/Beta_distribution",
+      "background": [
+        "CDF"
+      ]
     },
     "PRF": {
       "short": "A pseudorandom function ($\\PRF$) is deterministic for a fixed key but designed to be computationally indistinguishable from a random function without that key.",
@@ -53,12 +68,36 @@
     "exponential_race": {
       "short": "An exponential race selects the minimum among several independent exponential variables.",
       "details": "For independent exponential variables with rates $\\lambda_j$, $\\Pr(X_i=\\min_jX_j)=\\lambda_i/\\sum_j\\lambda_j$. Exponential races are a standard construction for categorical sampling.",
-      "link": "https://en.wikipedia.org/wiki/Exponential_distribution"
+      "link": "https://en.wikipedia.org/wiki/Exponential_distribution",
+      "background": [
+        "Exp",
+        "Categorical"
+      ]
     },
     "p_value": {
       "short": "A p-value is the null-hypothesis probability of obtaining a test statistic at least as extreme as the observed one.",
       "details": "A p-value is the probability, under the null hypothesis, of obtaining the observed test statistic or a result at least as extreme. It is computed by comparing the observed statistic with its null distribution. A small p-value means that the result would be unusual if the null hypothesis were true, providing evidence against it; it is not the probability that the null hypothesis itself is true. Its validity also depends on following the pre-specified testing protocol, including the stopping rule and the choice of which outcomes count as more extreme.",
       "link": "https://en.wikipedia.org/wiki/P-value"
+    },
+    "Categorical": {
+      "label": "Categorical distribution",
+      "short": "A categorical distribution is a discrete distribution over a finite set of categories.",
+      "details": "For categories $1,\\ldots,K$, its probability mass function is $\\Pr(C=i)=q_i$, where $q_i\\ge0$ and $\\sum_{i=1}^K q_i=1$. Its support consists of the categories with positive probability. Here the categories are candidate tokens and their probabilities are supplied by the language model.",
+      "link": "https://en.wikipedia.org/wiki/Categorical_distribution"
+    },
+    "PCG64": {
+      "label": "PCG-64",
+      "short": "PCG-64 is a deterministic pseudorandom number generator from the permuted congruential generator family.",
+      "details": "A seed initializes its internal state, and repeated draws advance that state to produce a reproducible sequence. In the cited simulation, the key and preceding tokens determine the seed, and each candidate receives one coordinate of the resulting vector. PCG-64 is a simulation generator, not a cryptographic security guarantee.",
+      "link": "https://www.pcg-random.org/paper.html"
+    },
+    "argmin": {
+      "short": "$\\argmin$ returns the argument at which an objective attains its minimum.",
+      "details": "For candidate scores $f_i$, $\\argmin_i f_i$ selects a minimizing index. Negation reverses the ordering, so $\\argmin_i f_i=\\argmax_i(-f_i)$. In the ideal continuous race, ties have probability zero.",
+      "link": "https://en.wikipedia.org/wiki/Arg_max",
+      "background": [
+        "argmax"
+      ]
     }
   },
   "annotations": [
@@ -76,7 +115,9 @@
       "label": "$\\mathbf p_t=(p_{t,1},\\ldots,p_{t,V})$",
       "short": "$\\mathbf p_t$ is the language model's categorical distribution at token position $t$.",
       "details": "Its $i$th coordinate $p_{t,i}$ is the probability assigned to candidate token $i$; all coordinates are nonnegative and sum to one.",
-      "background": []
+      "background": [
+        "Categorical"
+      ]
     },
     {
       "id": "probability_normalization",
@@ -84,7 +125,9 @@
       "label": "$\\sum_{i=1}^{V}p_{t,i}=1$",
       "short": "The candidate probabilities sum to one.",
       "details": "$\\sum_{i=1}^{V}p_{t,i}=1$ makes $\\mathbf p_t$ a valid categorical distribution over the $V$ vocabulary entries.",
-      "background": []
+      "background": [
+        "Categorical"
+      ]
     },
     {
       "id": "keyed_uniform",
@@ -93,7 +136,8 @@
       "short": "$r_{t,i}$ is the secret-key-derived value for candidate $i$ at position $t$.",
       "details": "The ideal analysis treats these values as independent $\\U(0,1)$ variables. In the implementation described by Li et al., the key and preceding tokens determine a PCG-64 seed, and candidate index $i$ selects the $i$th entry of the regenerated vector. NumPy's floating-point generator returns values in $[0,1)$, so an implementation applying logarithms should explicitly avoid exact endpoints.",
       "background": [
-        "Uniform"
+        "Uniform",
+        "PCG64"
       ]
     },
     {
@@ -119,7 +163,8 @@
       "short": "$\\PRF_{\\Key}$ is a pseudorandom function that takes the secret key, the preceding token context, and candidate-token index $i$, and produces a deterministic value $r_{t,i}$ in $(0,1)$ that appears random to someone without the key.",
       "details": "The same key, context, and candidate index always produce the same value, allowing the generator and verifier to compute $r_{t,i}$ independently. Changing an input is intended to produce a new random-looking value, although finite hash or pseudorandom outputs can collide. In the implementation described by Li et al., the key and preceding $m$ tokens determine a PCG-64 seed, and $i$ selects the corresponding entry of the generated candidate vector. Both parties must use the same key, tokenization, context rule, hashing method, pseudorandom generator, and candidate ordering.",
       "background": [
-        "PRF"
+        "PRF",
+        "PCG64"
       ]
     },
     {
@@ -190,7 +235,8 @@
       "details": "If $f_i\\ge f_j$, then $-f_i\\le-f_j$; therefore $\\argmax_i f_i=\\argmin_i(-f_i)$, including the same tie set. The next proof interprets the resulting auxiliary variable using the standard exponential-race analogy.",
       "background": [
         "argmax",
-        "exponential_race"
+        "exponential_race",
+        "argmin"
       ]
     },
     {
@@ -211,7 +257,9 @@
       "details": "This tutorial uses the standard Gumbel distribution with CDF $\\Pr(G\\le g)=e^{-e^{-g}}$. One independent Gumbel noise value is assigned to each candidate so that adding the noise to $\\log p_{t,i}$ turns an argmax into an exact categorical sample.",
       "background": [
         "Gumbel",
-        "CDF"
+        "CDF",
+        "Categorical",
+        "argmax"
       ]
     },
     {
@@ -223,7 +271,9 @@
       "background": [
         "Gumbel",
         "CDF",
-        "argmax"
+        "argmax",
+        "Categorical",
+        "Uniform"
       ]
     },
     {
@@ -246,7 +296,8 @@
       "details": "When $r_{t,i}$ behaves as a uniform random value, $X_{t,i}$ has an exponential distribution with rate $p_{t,i}$. The generator selects the candidate with the smallest $X_{t,i}$; this minimum construction is known as an exponential race.",
       "background": [
         "Exp",
-        "exponential_race"
+        "exponential_race",
+        "Uniform"
       ]
     },
     {
@@ -287,7 +338,8 @@
       "short": "$Y_{t,i}$ abbreviates the transformed uniform value $-\\log r_{t,i}$.",
       "details": "Because $r_{t,i}\\in(0,1)$, its logarithm is negative and $Y_{t,i}\\ge0$, matching the support of an exponential distribution.",
       "background": [
-        "Exp"
+        "Exp",
+        "Uniform"
       ]
     },
     {
@@ -355,7 +407,8 @@
       "details": "Assigning candidate $i$ the exponential rate $p_{t,i}$ makes its probability of attaining the minimum equal to the desired categorical probability $p_{t,i}$.",
       "background": [
         "Exp",
-        "exponential_race"
+        "exponential_race",
+        "Categorical"
       ]
     },
     {
@@ -391,7 +444,9 @@
       "short": "This is the conditional CDF of the selected keyed value under watermarking.",
       "details": "The mixture $\\sum_i p_{t,i}x^{1/p_{t,i}}$ lies below the uniform CDF $x$ on $(0,1)$, so $r_{t,w_t}$ is stochastically shifted toward one.",
       "background": [
-        "Uniform"
+        "Uniform",
+        "CDF",
+        "Beta"
       ]
     },
     {
@@ -474,6 +529,136 @@
       "details": "Here it is $\\Pr_{H_0}(S_T\\ge S_T^{\\rm obs})$ because unusually large scores are evidence for watermarking.",
       "background": [
         "p_value"
+      ]
+    },
+    {
+      "id": "uniform_symbol",
+      "kind": "notation",
+      "label": "$\\U$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Uniform"
+      ]
+    },
+    {
+      "id": "exp_symbol",
+      "kind": "notation",
+      "label": "$\\Exp$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Exp"
+      ]
+    },
+    {
+      "id": "prf_symbol",
+      "kind": "notation",
+      "label": "$\\PRF$",
+      "short": "",
+      "details": "",
+      "background": [
+        "PRF"
+      ]
+    },
+    {
+      "id": "argmax_symbol",
+      "kind": "notation",
+      "label": "$\\argmax$",
+      "short": "",
+      "details": "",
+      "background": [
+        "argmax"
+      ]
+    },
+    {
+      "id": "argmin_symbol",
+      "kind": "notation",
+      "label": "$\\argmin$",
+      "short": "",
+      "details": "",
+      "background": [
+        "argmin"
+      ]
+    },
+    {
+      "id": "pcg64_symbol",
+      "kind": "notation",
+      "label": "$\\operatorname{PCG64}$",
+      "short": "",
+      "details": "",
+      "background": [
+        "PCG64"
+      ]
+    },
+    {
+      "id": "pcg64_name",
+      "kind": "notation",
+      "label": "PCG-64",
+      "short": "",
+      "details": "",
+      "background": [
+        "PCG64"
+      ]
+    },
+    {
+      "id": "prf_name",
+      "kind": "notation",
+      "label": "PRF",
+      "short": "",
+      "details": "",
+      "background": [
+        "PRF"
+      ]
+    },
+    {
+      "id": "prf_concept",
+      "kind": "notation",
+      "label": "pseudorandom function",
+      "short": "",
+      "details": "",
+      "background": [
+        "PRF"
+      ]
+    },
+    {
+      "id": "uniform_name",
+      "kind": "notation",
+      "label": "Uniform",
+      "short": "",
+      "details": "",
+      "background": [
+        "Uniform"
+      ]
+    },
+    {
+      "id": "cdf_name",
+      "kind": "notation",
+      "label": "CDF",
+      "short": "",
+      "details": "",
+      "background": [
+        "CDF"
+      ]
+    },
+    {
+      "id": "cdf_concept",
+      "kind": "notation",
+      "label": "cumulative distribution function",
+      "short": "",
+      "details": "",
+      "background": [
+        "CDF"
+      ]
+    },
+    {
+      "id": "categorical_name",
+      "kind": "notation",
+      "label": "categorical",
+      "short": "",
+      "details": "",
+      "background": [
+        "Categorical"
       ]
     }
   ]

@@ -1,0 +1,11 @@
+This paper reader was made with IperPaper, a project designed to improve the experience of reading academic papers.
+Interactive elements work as follows:
+• Hover over an equation, figure, or table reference for a preview.
+• Hover over a citation for a preview. Click it to open a PDF or an explicit linked resource when available; otherwise, it jumps to the reference.
+• Some equations, derivation steps, and terms are blue. Hover over them for a short explanation (AI generated), or click them to open the full explanation in the side panel (AI generated).
+• In the background sections of a full explanation, a blue section title is a link to the corresponding Wikipedia page.
+• Select any text to open a small menu where you can ask ChatGPT or Perplexity to explain the selected passage.
+• Right-click text to highlight its sentence. Select text and right-click to highlight the selection. Right-click it again to remove the highlight. Highlights are saved in your browser and restored when you reopen the same reader.
+• Use the Split button at the top of the reader to switch between the default layout and a split layout that keeps the paper and explanation panel side by side.
+
+When a paper has two levels of detail, Level 1 is the self-contained main text and Level 2 adds optional explanations and derivations. Click a Level 2 heading to expand or collapse its content.

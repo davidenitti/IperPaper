@@ -12,7 +12,7 @@ For each paper, IperPaper can add:
 - blue semantic annotations on equations, derivation steps, and technical terms, with short hover explanations and full explanations in a side panel;
 - clickable links from background explanations to corresponding Wikipedia pages;
 - a text-selection menu for asking ChatGPT or Perplexity to explain the selected passage;
-- right-click a sentence or displayed equation to highlight it; right-click it again to remove the highlight. Highlights persist in browser storage;
+- with nothing selected, right-click text to highlight its sentence, or right-click a displayed equation to highlight the equation. Select text and right-click ordinary paper text to highlight the selection. Right-click it again to remove the highlight. Highlights are saved in your browser and restored when you reopen the same reader.
 - a split layout that keeps the paper and explanation panel side by side;
 - optional reading levels: authors keep the main text self-contained and wrap extra explanations and derivations in collapsible Level 2 sections.
 
@@ -22,13 +22,13 @@ If you have any questions or encounter issues while using IperPaper, please open
 
 ### Tutorial: Gumbel-Max Watermarking
 
-This tutorial was written specifically with IperPaper in mind. It provides a compact example of semantic annotations, explanatory tooltips, and mathematical notation designed for interactive reading. Read it as [PDF-backed HTML](https://davidenitti.github.io/IperPaper/papers/tutorial_gumbel_max_watermarking/tutorial_gumbel_max_watermarking.html) or [native HTML](https://davidenitti.github.io/IperPaper/papers/tutorial_gumbel_max_watermarking/tutorial_gumbel_max_watermarking.native.html).
+This tutorial was written specifically with IperPaper in mind. It provides a compact example of semantic annotations, explanatory tooltips, and mathematical notation designed for interactive reading. Read it as [PDF-backed HTML](https://davidenitti.github.io/IperPaper/papers/tutorial_gumbel_max_watermarking/tutorial_gumbel_max_watermarking.html) (recommended) or [native HTML](https://davidenitti.github.io/IperPaper/papers/tutorial_gumbel_max_watermarking/tutorial_gumbel_max_watermarking.native.html) (experimental).
 
 The tutorial's [annotations JSON](papers/tutorial_gumbel_max_watermarking/annotated/tutorial_gumbel_max_watermarking.annotations.json) contains the authored explanations and reusable background entries associated with `\iperpaper` targets in the TeX source. Its [citations JSON](papers/tutorial_gumbel_max_watermarking/annotated/tutorial_gumbel_max_watermarking.citations.json) is the build-maintained cache of bibliography keys, rendered citation numbers, verified metadata, and resolved external links.
 
 ### Mastering Diverse Domains through World Models
 
-This is an existing research paper annotated using IperPaper. It demonstrates how the annotation workflow can be applied to a complete paper while preserving its original structure and content. Read it as [PDF-backed HTML](https://davidenitti.github.io/IperPaper/papers/Mastering%20Diverse%20Domains%20through%20World%20Models/Mastering%20Diverse%20Domains%20through%20World%20Models.html) or [native HTML](https://davidenitti.github.io/IperPaper/papers/Mastering%20Diverse%20Domains%20through%20World%20Models/Mastering%20Diverse%20Domains%20through%20World%20Models.native.html).
+This is an existing research paper annotated using IperPaper. It demonstrates how the annotation workflow can be applied to a complete paper while preserving its original structure and content. Read it as [PDF-backed HTML](https://davidenitti.github.io/IperPaper/papers/Mastering%20Diverse%20Domains%20through%20World%20Models/Mastering%20Diverse%20Domains%20through%20World%20Models.html) (recommended) or [native HTML](https://davidenitti.github.io/IperPaper/papers/Mastering%20Diverse%20Domains%20through%20World%20Models/Mastering%20Diverse%20Domains%20through%20World%20Models.native.html) (experimental).
 
 See the paper's [annotations JSON](papers/Mastering%20Diverse%20Domains%20through%20World%20Models/annotated/Mastering%20Diverse%20Domains%20through%20World%20Models.annotations.json) and its build-maintained [citations JSON](papers/Mastering%20Diverse%20Domains%20through%20World%20Models/annotated/Mastering%20Diverse%20Domains%20through%20World%20Models.citations.json).
 
@@ -609,7 +609,7 @@ Each page contains:
 
 Authored IperPaper target text is styled in the compiled PDF by the `\iperpaper` wrapper. Automatic reference targets preserve the paper's native link styling. The overlay adds no permanent underline. Hovering an authored, equation, figure, table, or citation target shows its short explanation; hovering a generated figure or table target shows the preview and caption. Clicking an authored target opens the detailed explanation panel. Equation, figure, and table targets follow their original PDF destinations; citations open a resolved external resource when available and otherwise jump to the bibliography entry.
 
-Right-clicking ordinary prose highlights its complete sentence; right-clicking that sentence again removes the highlight. The browser context menu is suppressed when this highlight action is handled. Displayed equations are highlighted as complete equation blocks, while inline equations remain part of their surrounding sentence. Highlights are stored automatically in `localStorage`, scoped to the reader mode, paper title, and URL path, and restored after refresh. Left-click dragging performs ordinary browser text selection and opens the Ask AI menu, while interactive annotations, references, controls, and links retain their existing click behavior.
+Select text and right-click ordinary paper text to highlight the selected range, including partial sentences or multiple sentences across paragraphs or PDF pages. With nothing selected, right-clicking ordinary prose highlights its complete sentence; right-clicking that sentence again removes the highlight. The browser context menu is suppressed when this highlight action is handled. Displayed equations are highlighted as complete equation blocks, while inline equations remain part of their surrounding sentence. Highlights are stored automatically in `localStorage`, scoped to the reader mode, paper title, and URL path, and restored after refresh. Left-click dragging performs ordinary browser text selection and opens the Ask AI menu, while interactive annotations, references, controls, and links retain their existing click behavior.
 
 Math inside the explanation appears as SVG produced by the paper's LaTeX environment during the build.
 
@@ -617,7 +617,7 @@ Math inside the explanation appears as SVG produced by the paper's LaTeX environ
 
 The native renderer converts TeX to a responsive HTML document with Pandoc and renders paper equations with MathJax. Authored `\iperpaper` wrappers become DOM targets, while native equation, figure, table, and citation references are connected to the same generated tooltip metadata as the PDF-backed reader. It has no embedded PDF and does not load PDF.js.
 
-Native HTML provides the same persistent right-click-to-highlight behavior using its document text and semantic display-math elements. Its highlights use separate storage from the PDF-backed reader because native text anchors and PDF text-layer anchors are not interchangeable.
+Native HTML provides the same persistent selection-first right-click-to-highlight behavior using its document text and semantic display-math elements. Its highlights use separate storage from the PDF-backed reader because native text anchors and PDF text-layer anchors are not interchangeable.
 
 When generated citation metadata is available, native HTML emits one numbered `References` section with the same top-level heading hierarchy as the paper and suppresses Pandoc's duplicate raw `thebibliography` rendering.
 
@@ -665,11 +665,18 @@ With the repository's `.venv` activated, run the suite as specified in `AGENTS.m
 python -m unittest discover -s tests -v
 ```
 
-Alternatively, install the optional test dependency and use pytest:
+Alternatively, install the optional test dependency and use pytest for the
+Python test suite:
 
 ```bash
 python -m pip install -e '.[test]'
 python -m pytest
+```
+
+The browser-reader template checks are a separate Node.js test:
+
+```bash
+node tests/test_reader_selection.js
 ```
 
 Integration tests use the TeX and conversion tools listed under Setup; tests that require unavailable tools may be skipped.

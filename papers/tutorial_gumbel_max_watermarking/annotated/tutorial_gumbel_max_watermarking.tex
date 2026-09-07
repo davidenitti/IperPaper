@@ -135,10 +135,10 @@ Interactive elements work as follows:
 \item Hover over an equation reference, such as Equation~\eqref{eq:generation}, to preview the referenced equation. Click it to jump to the equation.
 \item Hover over a citation, such as Aaronson and Kirchner~\cite{aaronson2022}, to preview the bibliography entry. Click it to open a verified paper PDF or an explicit linked resource in a new tab when available; otherwise, it jumps to the reference.
 \item References to figures and tables also show a preview of the figure or table when you hover over them, although this tutorial contains no example of either kind of reference.
-\item Some equations, derivation steps, and terms are blue. For example, hover over \iperpaper{tutorial_annotation_example}{this annotated phrase} for a short explanation, or click it to open the full explanation in the side panel.
+\item Some equations, derivation steps, and terms are blue. For example, hover over \iperpaper{tutorial_annotation_example}{this annotated phrase} for a short explanation (AI generated), or click it to open the full explanation in the side panel (AI generated).
 \item In the background sections of a full explanation, a blue section title is a link to the corresponding Wikipedia page.
 \item Select any text to open a small menu where you can ask ChatGPT or Perplexity to explain the selected passage.
-\item Right-click ordinary text to highlight its sentence, or right-click a displayed equation to highlight the equation. Right-click it again to remove the highlight. Highlights are saved in your browser and restored when you reopen the same reader.
+\item With nothing selected, right-click text to highlight its sentence, or right-click a displayed equation to highlight the equation. Select text and right-click ordinary paper text to highlight the selection. Right-click it again to remove the highlight. Highlights are saved in your browser and restored when you reopen the same reader.
 \item Use the \emph{Split} button at the top of the reader to switch between the default layout and a split layout that keeps the paper and explanation panel side by side.
 \end{itemize}
 
@@ -202,29 +202,29 @@ The ideal analysis models the vector $(r_{t,1},\ldots,r_{t,V})$ as independent $
 \[
   r_{t,i}=\iperpaper{keyed_prf}{\PRF_{\Key}(w_{t-m},\ldots,w_{t-1},i)}.
 \]
-Here \(\PRF\) means \emph{pseudorandom function}. For a fixed key it is deterministic, but to an observer without the key its outputs are intended to be computationally indistinguishable from random values. Treating the $r_{t,i}$ values as independent $\U(0,1)$ variables is the ideal statistical model, not a claim that the implementation produces literal randomness.
+Here \(\iperpaper{prf_symbol}{\PRF}\) means \emph{\iperpaper{prf_concept}{pseudorandom function}}. For a fixed key it is deterministic, but to an observer without the key its outputs are intended to be computationally indistinguishable from random values. Treating the $r_{t,i}$ values as independent $\iperpaper{uniform_symbol}{\U}(0,1)$ variables is the ideal statistical model, not a claim that the implementation produces literal randomness.
 The generator and verifier must use exactly the same context rule and token encoding \cite{li2025}.
 
 One possible implementation, used in the simulations of Li et al., concatenates
 the preceding $m$ tokens with the key and applies a hash function $A$ to obtain a
-seed. That seed initializes the PCG-64 pseudorandom generator:
+seed. That seed initializes the \iperpaper{pcg64_name}{PCG-64} pseudorandom generator:
 \[
   \operatorname{seed}_t
   =A(w_{t-m},\ldots,w_{t-1},\Key),
   \qquad
   (r_{t,1},\ldots,r_{t,V})
-  =\operatorname{PCG64}(\operatorname{seed}_t).
+  =\iperpaper{pcg64_symbol}{\operatorname{PCG64}}(\operatorname{seed}_t).
 \]
 The second equality is shorthand for drawing the required floating-point vector from
 the initialized generator; NumPy's generator returns values in $[0,1)$, and candidate $i$ receives its $i$th entry.
-Li et al. use $m=5$ and NumPy's PCG-64 generator in this implementation. The
-independent $\U(0,1)$ behavior used in the analysis is an idealization of these
+Li et al. use $m=5$ and NumPy's \iperpaper{pcg64_name}{PCG-64} generator in this implementation. The
+independent $\iperpaper{uniform_symbol}{\U}(0,1)$ behavior used in the analysis is an idealization of these
 deterministic pseudorandom outputs \cite{li2025}.
 
 Changing the key or any context token changes the input to the seeding function and will ordinarily produce a different random-looking vector; repeated contexts or finite hash/seed collisions can nevertheless reuse one. Changing $i$ selects another coordinate. For a fixed key and context, every candidate $i$ gets a reproducible number. A verifier with the same key and the same tokenization, context, hashing, and pseudorandom-generator conventions can later recompute the same $r_{t,i}$ values from the observed text \cite{aaronson2022,li2025}.
 
 \begin{leveltwo}{Why the values are taken in \texorpdfstring{$(0,1)$}{(0,1)}}
-The ideal model treats each $r_{t,i}$ as continuous Uniform$(0,1)$. Exact endpoints have probability zero. Concrete floating-point RNG APIs may include an endpoint---for example, NumPy returns values in $[0,1)$---so implementations applying the logarithmic transforms should explicitly avoid exact endpoints.
+The ideal model treats each $r_{t,i}$ as continuous \iperpaper{uniform_name}{Uniform}$(0,1)$. Exact endpoints have probability zero. Concrete floating-point RNG APIs may include an endpoint---for example, NumPy returns values in $[0,1)$---so implementations applying the logarithmic transforms should explicitly avoid exact endpoints.
 \end{leveltwo}
 
 % =====================================================================
@@ -244,7 +244,7 @@ The power-form rule has the following equivalent logarithmic and minimum forms:
   &=\iperpaper{derivation_log_power}{\argmax_{i:p_{t,i}>0}\frac{1}{p_{t,i}}\log r_{t,i}}\\
   &=\iperpaper{derivation_fraction_form}{\argmax_{i:p_{t,i}>0}\frac{\log r_{t,i}}{p_{t,i}}}\\
   &=\iperpaper{derivation_sign_reversal}{\argmin_{i:p_{t,i}>0}\frac{-\log r_{t,i}}{p_{t,i}}}
-  =\argmin_{i:p_{t,i}>0}\iperpaper{race_time}{X_{t,i}}.
+  =\iperpaper{argmin_symbol}{\argmin}_{i:p_{t,i}>0}\iperpaper{race_time}{X_{t,i}}.
 \end{aligned}
   \label{eq:log-min-forms}
 \end{equation}
@@ -262,13 +262,13 @@ Thus the watermark does \emph{not} change the marginal next-token distribution w
 % =====================================================================
 \section{Why the generation rule preserves the model probabilities}
 
-If $r_{t,i}\sim\U(0,1)$, then
+If $r_{t,i}\sim\iperpaper{uniform_symbol}{\U}(0,1)$, then
 $\iperpaper{unit_exponential_transform}{-\log r_{t,i}\sim\Exp(\text{rate}=1)}$.
 
 \begin{leveltwo}{Proof that \texorpdfstring{$-\log r_{t,i}\sim\Exp(\text{rate}=1)$}{-log r is unit exponential}}
 An \iperpaper{exponential_distribution_concept}{exponential distribution} with rate
 $\lambda>0$ is a probability distribution on $[0,\infty)$. If
-$Y\sim\Exp(\text{rate}=\lambda)$, its density and survival function are
+$Y\sim\iperpaper{exp_symbol}{\Exp}(\text{rate}=\lambda)$, its density and survival function are
 \[
   \iperpaper{exponential_distribution_survival}{
   f_Y(x)=\lambda e^{-\lambda x},
@@ -294,19 +294,19 @@ For any $x\ge0$, compute its survival probability step by step:
   &=\iperpaper{unit_exp_uniform_cdf}{e^{-x}}.
 \end{align*}
 The final expression is exactly the survival function of
-$\Exp(\text{rate}=1)$. For $x<0$, both survival probabilities equal $1$
+$\iperpaper{exp_symbol}{\Exp}(\text{rate}=1)$. For $x<0$, both survival probabilities equal $1$
 because $Y_{t,i}\ge0$. Hence
-$Y_{t,i}=-\log r_{t,i}\sim\Exp(\text{rate}=1)$.
+$Y_{t,i}=-\log r_{t,i}\sim\iperpaper{exp_symbol}{\Exp}(\text{rate}=1)$.
 \end{samepage}
 \end{leveltwo}
 
-Since $-\log r_{t,i}\sim\Exp(\text{rate}=1)$, the definition $X_{t,i}=(-\log r_{t,i})/p_{t,i}$, given immediately after Equation~\eqref{eq:log-min-forms}, implies that
+Since $-\log r_{t,i}\sim\iperpaper{exp_symbol}{\Exp}(\text{rate}=1)$, the definition $X_{t,i}=(-\log r_{t,i})/p_{t,i}$, given immediately after Equation~\eqref{eq:log-min-forms}, implies that
 \[
   \iperpaper{race_distribution}{X_{t,i}\sim\Exp(\text{rate}=p_{t,i})},
 \]
 
 \begin{leveltwo}{Why dividing by \texorpdfstring{$p_{t,i}$}{pti} changes the exponential rate}
-Let $E=-\log r_{t,i}$. Because $r_{t,i}\sim\U(0,1)$, $E\sim\Exp(1)$. For
+Let $E=-\log r_{t,i}$. Because $r_{t,i}\sim\iperpaper{uniform_symbol}{\U}(0,1)$, $E\sim\iperpaper{exp_symbol}{\Exp}(1)$. For
 \[
   X_{t,i}=\frac{E}{p_{t,i}},
 \]
@@ -316,11 +316,11 @@ and $x\ge0$,
 &=\Pp\!\left(E>p_{t,i}x\right)\\
 &=e^{-p_{t,i}x}.
 \end{align*}
-That is exactly the survival function of an exponential random variable with rate $p_{t,i}$. Thus $X_{t,i}\sim\Exp(p_{t,i})$. Larger $p_{t,i}$ means a distribution more concentrated near zero, which makes that candidate more likely to attain the minimum.
+That is exactly the survival function of an exponential random variable with rate $p_{t,i}$. Thus $X_{t,i}\sim\iperpaper{exp_symbol}{\Exp}(p_{t,i})$. Larger $p_{t,i}$ means a distribution more concentrated near zero, which makes that candidate more likely to attain the minimum.
 \end{leveltwo}
 
 
-From Equation~\eqref{eq:log-min-forms}, $w_t=\argmin_{i:p_{t,i}>0}X_{t,i}$, so $w_t$ is the candidate with the smallest value among independent exponential random variables with rates $p_{t,1},\ldots,p_{t,V}$.
+From Equation~\eqref{eq:log-min-forms}, $w_t=\iperpaper{argmin_symbol}{\argmin}_{i:p_{t,i}>0}X_{t,i}$, so $w_t$ is the candidate with the smallest value among independent exponential random variables with rates $p_{t,1},\ldots,p_{t,V}$.
 
 For independent exponential random variables with rates $p_{t,1},\ldots,p_{t,V}$, the probability that candidate $i$ has the minimum is
 \[
@@ -331,7 +331,7 @@ Because the model probabilities sum to one,
 \[
   \iperpaper{exponential_race}{\Pp(X_{t,i}=\min_jX_{t,j})=p_{t,i}}.
 \]
-This identity is commonly called an \iperpaper{exponential_race_concept}{\emph{exponential race}}. It proves Equation~\eqref{eq:unbiased-summary} and is the mathematical reason the watermark preserves the model's categorical distribution exactly while still coupling the output to secret randomness.
+This identity is commonly called an \iperpaper{exponential_race_concept}{\emph{exponential race}}. It proves Equation~\eqref{eq:unbiased-summary} and is the mathematical reason the watermark preserves the model's \iperpaper{categorical_name}{categorical} distribution exactly while still coupling the output to secret randomness.
 
 \begin{leveltwo}{Conceptual picture: exponential waiting times and races}
 An \iperpaper{exponential_distribution_concept}{exponential distribution} is often
@@ -385,7 +385,7 @@ Given $X_{t,i}=x$, candidate $i$ is selected exactly when $X_{t,j}>x$ for every 
 \]
 
 \textbf{Step 2: insert the exponential density and survival functions.}
-For $X_{t,i}\sim\Exp(p_{t,i})$,
+For $X_{t,i}\sim\iperpaper{exp_symbol}{\Exp}(p_{t,i})$,
 \[
   f_i(x)=p_{t,i}e^{-p_{t,i}x},\qquad x\ge0.
 \]
@@ -438,7 +438,7 @@ This completes the proof of Eq.~\eqref{eq:unbiased-summary}.
 \end{leveltwo}
 
 \begin{leveltwo}{Connection with the classical Gumbel-max sampler}
-A \iperpaper{gumbel_distribution}{Gumbel distribution} is a probability distribution on the real line that is commonly used to describe random extremes, such as a maximum. Here its practical role is simpler: it supplies one independent random noise value for each candidate token. A \emph{standard} Gumbel random variable $G$ has cumulative distribution function
+A \iperpaper{gumbel_distribution}{Gumbel distribution} is a probability distribution on the real line that is commonly used to describe random extremes, such as a maximum. Here its practical role is simpler: it supplies one independent random noise value for each candidate token. A \emph{standard} Gumbel random variable $G$ has \iperpaper{cdf_concept}{cumulative distribution function}
 \[
   \Pp(G\le g)=e^{-e^{-g}}, \qquad g\in\mathbb R.
 \]
@@ -452,9 +452,9 @@ The \iperpaper{gumbel_max_sampler}{Gumbel-max sampler} is a recipe for drawing o
 \item output the candidate with the largest score.
 \end{enumerate}
 \end{samepage}
-The term $\log p_{t,i}$ gives more probable candidates a larger baseline score, while $G_{t,i}$ randomizes the winner. The remarkable fact is that this competition is an exact categorical sampler:
+The term $\log p_{t,i}$ gives more probable candidates a larger baseline score, while $G_{t,i}$ randomizes the winner. The remarkable fact is that this competition is an exact \iperpaper{categorical_name}{categorical} sampler:
 \[
-  \Pp\!\left(i=\argmax_j\{\log p_{t,j}+G_{t,j}\}\right)=p_{t,i}.
+  \Pp\!\left(i=\iperpaper{argmax_symbol}{\argmax}_j\{\log p_{t,j}+G_{t,j}\}\right)=p_{t,i}.
 \]
 For example, if two candidates have probabilities $0.8$ and $0.2$, repeating the procedure makes them win $80\%$ and $20\%$ of the time, respectively---not necessarily on any single draw, but across repeated independent draws.
 
@@ -464,17 +464,17 @@ In this watermark, the Gumbel values are not generated as a separate source of r
 \]
 When the keyed values behave like independent uniforms, this transformation makes the $G_{t,i}$ behave like independent standard Gumbel draws. Thus the generator and verifier can reproduce the same hidden noise from the key. In terms of $G_{t,i}$, the minimum form in Eq.~\eqref{eq:log-min-forms} is equivalent to
 \begin{align*}
-\argmin_i\frac{-\log r_{t,i}}{p_{t,i}}
-&=\argmax_i\left[-\log\left(\frac{-\log r_{t,i}}{p_{t,i}}\right)\right]\\
-&=\argmax_i\left(\log p_{t,i}-\log(-\log r_{t,i})\right)\\
-&=\argmax_i\bigl(\log p_{t,i}+G_{t,i}\bigr).
+\iperpaper{argmin_symbol}{\argmin}_i\frac{-\log r_{t,i}}{p_{t,i}}
+&=\iperpaper{argmax_symbol}{\argmax}_i\left[-\log\left(\frac{-\log r_{t,i}}{p_{t,i}}\right)\right]\\
+&=\iperpaper{argmax_symbol}{\argmax}_i\left(\log p_{t,i}-\log(-\log r_{t,i})\right)\\
+&=\iperpaper{argmax_symbol}{\argmax}_i\bigl(\log p_{t,i}+G_{t,i}\bigr).
 \end{align*}
 The first equality holds because $-\log x$ is strictly decreasing on $(0,\infty)$: minimizing a positive quantity is the same as maximizing its negative logarithm. The final expression is exactly the three-step Gumbel-max rule above. The exponential-race proof earlier in this section explains why its winning probabilities are the desired $p_{t,i}$ values.
 
 \end{leveltwo}
 
 \begin{leveltwo}{Verifying that \texorpdfstring{$G_{t,i}$}{Gti} is standard Gumbel}
-If $r_{t,i}\sim\U(0,1)$, then for any $g\in\mathbb R$,
+If $r_{t,i}\sim\iperpaper{uniform_symbol}{\U}(0,1)$, then for any $g\in\mathbb R$,
 \begin{align*}
 \Pp(G_{t,i}\le g)
 &=\Pp\!\left(-\log(-\log r_{t,i})\le g\right)\\
@@ -483,17 +483,17 @@ If $r_{t,i}\sim\U(0,1)$, then for any $g\in\mathbb R$,
 &=\Pp\!\left(r_{t,i}\le e^{-e^{-g}}\right)\\
 &=e^{-e^{-g}}.
 \end{align*}
-This is the CDF of a standard Gumbel random variable. Thus the two appearances of $\log$ in $G_{t,i}=-\log(-\log r_{t,i})$ are not a typographical error; they are exactly the transform that converts a uniform variable into a standard Gumbel variable.
+This is the \iperpaper{cdf_name}{CDF} of a standard Gumbel random variable. Thus the two appearances of $\log$ in $G_{t,i}=-\log(-\log r_{t,i})$ are not a typographical error; they are exactly the transform that converts a uniform variable into a standard Gumbel variable.
 \end{leveltwo}
 
 % =====================================================================
 \section{Regenerating secret values from observed text}
 
-A text by itself does \textbf{not} reveal the secret pseudorandom numbers. To verify the watermark one needs the correct secret key and the exact PRF/tokenization conventions. With those, the verifier does not ``extract'' the values from the text; it \textbf{recomputes} them.
+A text by itself does \textbf{not} reveal the secret pseudorandom numbers. To verify the watermark one needs the correct secret key and the exact \iperpaper{prf_name}{PRF}/tokenization conventions. With those, the verifier does not ``extract'' the values from the text; it \textbf{recomputes} them.
 
 For each eligible position $t$ in the observed token sequence $w_1,\ldots,w_T$, the verifier computes
 \[
-  r_{t,w_t}=\PRF_{\Key}(\text{prescribed context},w_t).
+  r_{t,w_t}=\iperpaper{prf_symbol}{\PRF}_{\Key}(\text{prescribed context},w_t).
 \]
 It therefore obtains the one-dimensional sequence
 \[
@@ -505,7 +505,7 @@ The verification pipeline is:
 \begin{enumerate}
 \item tokenize the text exactly as the watermark scheme does;
 \item at each scorable position, reconstruct the prescribed context;
-\item evaluate the keyed PRF on that context and the observed token $w_t$;
+\item evaluate the keyed \iperpaper{prf_name}{PRF} on that context and the observed token $w_t$;
 \item feed the resulting $r_{t,w_t}$ values to the statistical detector.
 \end{enumerate}
 
@@ -514,9 +514,9 @@ The hidden signal is not ``a list of numbers stored inside the text.'' It is a \
 \end{keybox}
 
 \begin{leveltwo}{What must match exactly in an implementation}
-A verifier generally needs the same secret key, tokenizer and token IDs, context-window rule, PRF or keyed hash, domain-separation/salting convention, and hash-to-$(0,1)$ conversion used by the generator. If the scheme masks repeated contexts or uses other bookkeeping, that convention must also match.
+A verifier generally needs the same secret key, tokenizer and token IDs, context-window rule, \iperpaper{prf_name}{PRF} or keyed hash, domain-separation/salting convention, and hash-to-$(0,1)$ conversion used by the generator. If the scheme masks repeated contexts or uses other bookkeeping, that convention must also match.
 
-Finite-context seeding has one useful synchronization property: after a local insertion or deletion, the PRF inputs may be wrong for several subsequent positions, but once the edit leaves the context window, later contexts can match again. That does not make the scheme fully edit-robust, but it explains why small local edits need not destroy all later evidence.
+Finite-context seeding has one useful synchronization property: after a local insertion or deletion, the \iperpaper{prf_name}{PRF} inputs may be wrong for several subsequent positions, but once the edit leaves the context window, later contexts can match again. That does not make the scheme fully edit-robust, but it explains why small local edits need not destroy all later evidence.
 
 \end{leveltwo}
 
@@ -561,9 +561,9 @@ Let
 be the support of the next-token distribution. Then
 $\sum_{i\in\mathcal S_t}p_{t,i}=1$. Recall that, conditional on
 $\mathbf p_t$, the ideal model treats the values $r_{t,i}$ as independent
-$\U(0,1)$ random variables and the watermarked generator selects
+$\iperpaper{uniform_symbol}{\U}(0,1)$ random variables and the watermarked generator selects
 \[
-  w_t=\argmax_{i\in\mathcal S_t} r_{t,i}^{1/p_{t,i}}.
+  w_t=\iperpaper{argmax_symbol}{\argmax}_{i\in\mathcal S_t} r_{t,i}^{1/p_{t,i}}.
 \]
 The variables are continuous, so ties have probability zero.
 
@@ -574,7 +574,7 @@ Candidate $i$ wins exactly when, for every $j\in\mathcal S_t$ with $j\ne i$,
   \quad\Longleftrightarrow\quad
   r_{t,j}\le u^{p_{t,j}/p_{t,i}}.
 \]
-Because $r_{t,j}\sim\U(0,1)$ and $0<u^{p_{t,j}/p_{t,i}}<1$, each competing
+Because $r_{t,j}\sim\iperpaper{uniform_symbol}{\U}(0,1)$ and $0<u^{p_{t,j}/p_{t,i}}<1$, each competing
 candidate satisfies
 \[
   \Pp\!\left(r_{t,j}\le u^{p_{t,j}/p_{t,i}}\right)
@@ -634,7 +634,7 @@ Dividing the joint probability by this selection probability gives
 &=x^{1/p_{t,i}},
 \end{aligned}
 \]
-the CDF of $\iperpaper{beta_conditional_cdf}{\Beta(1/p_{t,i},1)}$.
+the \iperpaper{cdf_name}{CDF} of $\iperpaper{beta_conditional_cdf}{\Beta(1/p_{t,i},1)}$.
 \end{leveltwo}
 
 For every $i\in\mathcal S_t$, we have $0<p_{t,i}\le1$ and therefore
@@ -644,7 +644,7 @@ decrease it, so $x^{1/p_{t,i}}\le x$. Hence
 \sum_{i\in\mathcal S_t} p_{t,i}x^{1/p_{t,i}}
 \le x\sum_{i\in\mathcal S_t} p_{t,i}=x.
 \]
-so the alternative CDF lies below the Uniform$(0,1)$ CDF. Equivalently, $r_{t,w_t}$ is stochastically larger under $H_1$ \cite{li2025}.
+so the alternative \iperpaper{cdf_name}{CDF} lies below the \iperpaper{uniform_name}{Uniform}$(0,1)$ \iperpaper{cdf_name}{CDF}. Equivalently, $r_{t,w_t}$ is stochastically larger under $H_1$ \cite{li2025}.
 
 A compact expectation table is therefore:
 \begin{center}
@@ -652,8 +652,8 @@ A compact expectation table is therefore:
 \toprule
 Text source & Distribution of $r_{t,w_t}$ in the ideal model & Basic expectation \\
 \midrule
-Human / unwatermarked LLM & $\U(0,1)$ & $\E[r_{t,w_t}]=0.5$ \\
-Keyed Gumbel-max LLM & CDF $\sum_i p_{t,i}x^{1/p_{t,i}}$ & $\E[r_{t,w_t}]>0.5$ unless the next-token distribution is singular \\
+Human / unwatermarked LLM & $\iperpaper{uniform_symbol}{\U}(0,1)$ & $\E[r_{t,w_t}]=0.5$ \\
+Keyed Gumbel-max LLM & \iperpaper{cdf_name}{CDF} $\sum_i p_{t,i}x^{1/p_{t,i}}$ & $\E[r_{t,w_t}]>0.5$ unless the next-token distribution is singular \\
 \bottomrule
 \end{tabularx}
 \end{center}
@@ -676,7 +676,7 @@ Values of $r_{t,w_t}$ close to 1 produce large positive contributions.
 
 Under $H_0$, Eq.~\eqref{eq:nullr} implies
 \[
-  Z_t\sim\Exp(\text{rate}=1),
+  Z_t\sim\iperpaper{exp_symbol}{\Exp}(\text{rate}=1),
   \qquad
   \E_0[Z_t]=1,
   \qquad
@@ -729,7 +729,7 @@ This is why sampling uncertainty matters: more plausible alternatives give the w
 
 
 \begin{leveltwo}{What the verifier does not need to reconstruct}
-For this chosen-coordinate detector, the verifier does not need the original prompt, hidden system prompt, temperature, or the model's exact logits to determine the null distribution. Those quantities influence the alternative distribution and therefore the detection power, but under the ideal null the selected value $r_{t,w_t}$ is Uniform$(0,1)$ without knowing $\mathbf p_t$ \cite{li2025}.
+For this chosen-coordinate detector, the verifier does not need the original prompt, hidden system prompt, temperature, or the model's exact logits to determine the null distribution. Those quantities influence the alternative distribution and therefore the detection power, but under the ideal null the selected value $r_{t,w_t}$ is \iperpaper{uniform_name}{Uniform}$(0,1)$ without knowing $\mathbf p_t$ \cite{li2025}.
 
 \end{leveltwo}
 
@@ -766,14 +766,14 @@ The Aaronson--Kirchner idea can be remembered as six linked statements:
 \item The secret key supplies pseudorandom values $r_{t,i}$.
 \item The generator chooses
 \[
-  w_t=\argmax_i r_{t,i}^{1/p_{t,i}}.
+  w_t=\iperpaper{argmax_symbol}{\argmax}_i r_{t,i}^{1/p_{t,i}}.
 \]
 \item The exponential-race identity guarantees
 \[
   \Pp(w_t=i)=p_{t,i},
 \]
 so the marginal next-token distribution is preserved.
-\item A verifier with the key regenerates the selected value $r_{t,w_t}$ at every scorable position. Under key-independent text, $r_{t,w_t}\sim\U(0,1)$; under watermarking it is biased toward 1.
+\item A verifier with the key regenerates the selected value $r_{t,w_t}$ at every scorable position. Under key-independent text, $r_{t,w_t}\sim\iperpaper{uniform_symbol}{\U}(0,1)$; under watermarking it is biased toward 1.
 \item Aaronson's original detector sums $-\log(1-r_{t,w_t})$; later statistical work studies better ways to aggregate this evidence.
 \end{enumerate}
 

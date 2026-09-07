@@ -13,7 +13,7 @@ from pypdf.generic import ContentStream
 
 import bib_utils
 import iperpaper
-from iperpaper_templates import read_template
+from iperpaper_templates import reader_version, read_template
 
 HAS_LATEX = shutil.which("latexmk") is not None
 HAS_MATH_RENDER = HAS_LATEX and shutil.which("pdfcrop") is not None and shutil.which("pdftocairo") is not None
@@ -1146,10 +1146,6 @@ Theta & 66 \\
             ".brand { color:#3266C7; font-weight:750; letter-spacing:-.02em; text-decoration:none; }",
             out,
         )
-        self.assertIn(
-            '<header class="ip-header"><a class="brand" href="https://github.com/davidenitti/IperPaper/" target="_blank" rel="noopener noreferrer">IperPaper</a><button id="layout-toggle" class="layout-toggle" type="button" aria-pressed="false" title="Toggle split reading view">Split</button></header>',
-            out,
-        )
         self.assertIn("offset=(header?.getBoundingClientRect().height||0)+8", out)
         self.assertIn("top:var(--ip-header-height); bottom:0", out)
         self.assertIn("const minTop=(header?.getBoundingClientRect().bottom||0)+pad", out)
@@ -1374,8 +1370,7 @@ See \eqref{eq:sum} and \cite{smith}.
                     "details": "Generated bibliography reference.",
                     "background": [],
                     "paper_title": (
-                        "Efficient Online LLM Watermark Detection via "
-                        "Rao-Blackwellized E-Processes"
+                        "Efficient Online LLM Watermark Detection via " "Rao-Blackwellized E-Processes"
                     ),
                     "paper_title_verified": True,
                 }

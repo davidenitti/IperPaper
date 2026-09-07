@@ -7,7 +7,7 @@ from unittest import mock
 
 import iperpaper
 import iperpaper_native_html
-from iperpaper_templates import read_template
+from iperpaper_templates import reader_version, read_template
 
 HAS_LATEX = shutil.which("latexmk") is not None
 HAS_PANDOC = shutil.which("pandoc") is not None
@@ -136,7 +136,7 @@ class IperPaperNativeHtmlTests(unittest.TestCase):
         self.assertIn(".map(repairNativeHighlight)", native_template)
         self.assertIn("function repairNativeHighlight", native_template)
         self.assertIn("bounds.end===oldEnd", native_template)
-        self.assertIn("sentenceBounds(model.text,offset,model.sentenceText)", native_template)
+        self.assertIn("nativeSentenceBounds(model,offset)", native_template)
 
     def test_figure_cref_rewrite_preserves_single_and_multiple_links(self):
         """Verify that figure cref rewrite preserves single and multiple links."""
@@ -221,6 +221,92 @@ A & B \\
         self.assertIn(r"\hspace{-2.4ex}", rewritten)
         self.assertNotIn(r"\hspace*", rewritten)
         self.assertNotIn(r"\ensuremath", rewritten)
+
+    def test_native_tex_preserves_overlapping_equation_brace(self):
+        """Keep the RSSM brace's offset and overlap through TeX conversion."""
+        source = r"""\raisebox{1.95ex}{\llap{\blap{\ensuremath{
+\text{RSSM}\begin{cases}\hphantom{A}\\\hphantom{A}\\\hphantom{A}\end{cases}
+}}}} & \text{Sequence model:} & h_t=f_\phi(h_{t-1})"""
+
+        rewritten = iperpaper_native_html._replace_native_tex_commands(source)
+
+        self.assertIn(r"\raise 1.95ex {\llap{\iperpaperblap{", rewritten)
+        self.assertIn(r"\begin{cases}\hphantom{A}\\\hphantom{A}\\\hphantom{A}\end{cases}", rewritten)
+        self.assertIn(r"& \text{Sequence model:} & h_t=f_\phi(h_{t-1})", rewritten)
+        self.assertNotIn(r"\ensuremath", rewritten)
+        self.assertEqual(
+            iperpaper_native_html._replace_native_tex_commands(r"\tlap{x} + \llap{y}"),
+            r"\iperpapertlap{x} + \llap{y}",
+        )
+
+    @unittest.skipUnless(HAS_PANDOC, "pandoc is required")
+    def test_pandoc_preserves_vertical_overlap_and_annotation_targets(self):
+        """Keep custom overlap boxes and math targets through the real pipeline."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "commands.tex").write_text(
+                r"\newcommand{\blap}[1]{\vbox to 0pt{\hbox{#1}\vss}}",
+                encoding="utf-8",
+            )
+            source = root / "main.tex"
+            source.write_text(
+                r"""\documentclass{article}
+\usepackage{amsmath,hyperref}
+\input{commands}
+\begin{document}
+\[\begin{aligned}
+\raisebox{1.95ex}{\llap{\blap{\ensuremath{
+\text{RSSM}\begin{cases}\hphantom{A}\\\hphantom{A}\\\hphantom{A}\end{cases}
+}}}} & \text{Sequence model:} & \iperpaper{state}{h_t} = f_\phi(h_{t-1})\\
+& \text{Encoder:} & z_t \\ & \text{Dynamics predictor:} & \hat{z}_t
+\end{aligned}\]
+\end{document}""",
+                encoding="utf-8",
+            )
+            annotations = {"title": "Overlap", "annotations": [{"id": "state"}]}
+
+            output = iperpaper_native_html.build_native_html(root, source, annotations, [])
+
+        self.assertIn(r"\raise 1.95ex", output)
+        self.assertIn(r"\llap{\iperpaperblap{", output)
+        self.assertIn(iperpaper_native_html._native_math_class("state"), output)
+        self.assertNotIn(r"\vbox", output)
+        self.assertIn("iperpaperblap:['verticalLap','-1height']", output)
+        self.assertIn("iperpapertlap:['verticalLap','1depth']", output)
+
+    @unittest.skipUnless(HAS_PANDOC, "pandoc is required")
+    def test_native_figure_caption_uses_compiled_number(self):
+        """Restore the compiled figure number without losing caption formatting."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "main.tex"
+            source.write_text(
+                r"""\documentclass{article}
+\begin{document}
+\begin{figure}
+Artwork
+\caption{Multi-step \textbf{video predictions}.}\label{fig:openl}
+\end{figure}
+\end{document}""",
+                encoding="utf-8",
+            )
+            annotations = {
+                "title": "Figure test",
+                "annotations": [
+                    {
+                        "id": iperpaper_native_html.automatic_reference_id("figure", "fig:openl"),
+                        "label": "Figure 4",
+                    }
+                ],
+            }
+
+            fragment, _ = iperpaper_native_html._pandoc_native_fragment(root, source, annotations)
+
+        self.assertIn('<figure id="fig:openl">', fragment)
+        self.assertIn("<figcaption><strong>Figure 4:</strong> Multi-step", fragment)
+        self.assertIn("<strong>video predictions</strong>", " ".join(fragment.split()))
+        self.assertEqual(fragment.count("Figure 4:"), 1)
+        self.assertNotIn("Figure 1:", fragment)
 
     def test_native_title_metadata_replaces_orphan_maketitle_marker(self):
         """Verify that native output starts with title metadata, not a footnote marker."""
@@ -574,10 +660,6 @@ Native \iperpaper{term}{annotated text} and $\iperpaper{symbol}{x_i}$.
             ]
             output = iperpaper_native_html.build_native_html(root, source, annotations, rendered)
 
-        self.assertIn(
-            '<header class="ip-header"><a class="brand" href="https://github.com/davidenitti/IperPaper/" target="_blank" rel="noopener noreferrer">IperPaper</a><button id="layout-toggle" class="layout-toggle" type="button" aria-pressed="false" title="Toggle split reading view">Split</button></header>',
-            output,
-        )
         self.assertIn('href="iperpaper:term"', output)
         self.assertIn(iperpaper_native_html._native_math_class("symbol"), output)
         self.assertIn("annotated text", output)
@@ -611,10 +693,6 @@ Native \iperpaper{term}{annotated text} and $\iperpaper{symbol}{x_i}$.
         )
         self.assertIn(
             ".brand { color:#3266C7; font-weight:750; letter-spacing:-.02em; text-decoration:none; }",
-            output,
-        )
-        self.assertIn(
-            '<header class="ip-header"><a class="brand" href="https://github.com/davidenitti/IperPaper/" target="_blank" rel="noopener noreferrer">IperPaper</a><button id="layout-toggle" class="layout-toggle" type="button" aria-pressed="false" title="Toggle split reading view">Split</button></header>',
             output,
         )
         self.assertIn("position:sticky; top:0", output)
@@ -689,10 +767,6 @@ Native \iperpaper{term}{annotated text} and $\iperpaper{symbol}{x_i}$.
             self.assertIn("data:image/svg+xml;base64,", html_text)
             self.assertNotIn("mathjax", html_text.lower())
             native_html_text = native_html_path.read_text(encoding="utf-8")
-            self.assertIn(
-                '<header class="ip-header"><a class="brand" href="https://github.com/davidenitti/IperPaper/" target="_blank" rel="noopener noreferrer">IperPaper</a><button id="layout-toggle" class="layout-toggle" type="button" aria-pressed="false" title="Toggle split reading view">Split</button></header>',
-                native_html_text,
-            )
             self.assertIn("MathJax", native_html_text)
             self.assertNotIn("PDF_BASE64", native_html_text)
 

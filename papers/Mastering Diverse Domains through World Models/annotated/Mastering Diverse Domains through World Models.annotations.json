@@ -30,8 +30,8 @@
       "details": "The critic is parameterized by $\\psi$ and trained on bootstrapped $\\lambda$-return targets. Its expected prediction supplies values for bootstrapping and the actor's advantage estimate.",
       "background": [
         "ActorCritic",
-        "Categorical",
-        "NLL"
+        "LambdaReturn",
+        "Expectation"
       ]
     },
     {
@@ -80,7 +80,9 @@
       "label": "$h_t$",
       "short": "The deterministic recurrent state $h_t$ of the RSSM at time $t$.",
       "details": "The sequence model updates $h_t$ from $h_{t-1}$, $z_{t-1}$, and $a_{t-1}$. It carries temporal context needed to predict the next latent state.",
-      "background": []
+      "background": [
+        "RSSM"
+      ]
     },
     {
       "id": "action_at",
@@ -96,7 +98,9 @@
       "label": "$a_{t-1}$",
       "short": "The previous action $a_{t-1}$, taken at time $t-1$.",
       "details": "The RSSM uses $a_{t-1}$ together with $h_{t-1}$ and $z_{t-1}$ to compute $h_t$. It is the one-step-lagged action, not the action $a_t$ selected at time $t$.",
-      "background": []
+      "background": [
+        "RSSM"
+      ]
     },
     {
       "id": "model_state_st",
@@ -158,10 +162,7 @@
       "label": "$\\hat r_t$",
       "short": "The reward predicted by the world model at time t.",
       "details": "$\\hat r_t$ is sampled from $p_\\phi(\\hat r_t \\mid h_t,z_t)$. These predictions provide imagined rewards for actor–critic learning.",
-      "background": [
-        "Symexp",
-        "Twohot"
-      ]
+      "background": []
     },
     {
       "id": "predicted_continue_chat",
@@ -223,7 +224,8 @@
       "short": "$p_\\phi(\\hat x_t \\mid h_t,z_t)$ reconstructs the sensory observation.",
       "details": "The decoder head makes the latent state retain information about $x_t$. It uses convolutional decoding for images and an MLP for vector observations.",
       "background": [
-        "NLL"
+        "CNN",
+        "MLP"
       ]
     },
     {
@@ -234,7 +236,8 @@
       "details": "If $p$ is the soft probability vector and $z$ its discrete sample, the straight-through construction $z_{\\mathrm{st}}=\\operatorname{sg}(z-p)+p$ equals $z$ in the forward pass but differentiates as $p$ in the backward pass. This lets Dreamer's encoder and predictor receive gradients through categorical samples.",
       "background": [
         "Gradient",
-        "StopGradient"
+        "StopGradient",
+        "Categorical"
       ]
     },
     {
@@ -245,7 +248,8 @@
       "details": "It sums $\\mathcal L_{\\mathrm{pred}}$, $\\mathcal L_{\\mathrm{dyn}}$, and $\\mathcal L_{\\mathrm{rep}}$ across a sequence and averages under encoder samples $q_\\phi$. Fixed $\\beta$ coefficients balance the three terms.",
       "background": [
         "KL",
-        "NLL"
+        "NLL",
+        "Expectation"
       ]
     },
     {
@@ -295,7 +299,8 @@
       "short": "The KL loss that trains latent dynamics to predict encoder representations.",
       "details": "It compares stopped encoder target $q_\\phi(z_t\\mid h_t,x_t)$ with dynamics predictor $p_\\phi(z_t\\mid h_t)$ and applies a one-nat free-bits floor. Its gradients primarily update the predictor.",
       "background": [
-        "KL"
+        "KL",
+        "StopGradient"
       ]
     },
     {
@@ -305,7 +310,8 @@
       "short": "The KL loss that makes encoder representations easier for the dynamics model to predict.",
       "details": "It reverses which side of the KL receives stop-gradient relative to $\\mathcal L_{\\mathrm{dyn}}$ and also uses a one-nat floor. Its smaller global weight helps retain useful input detail.",
       "background": [
-        "KL"
+        "KL",
+        "StopGradient"
       ]
     },
     {
@@ -315,7 +321,8 @@
       "short": "",
       "details": "Dreamer uses KL divergence to align $q_\\phi(z_t\\mid h_t,x_t)$ with $p_\\phi(z_t\\mid h_t)$. Separate stop-gradient placements split learning pressure between predictor and representation.",
       "background": [
-        "KL"
+        "KL",
+        "StopGradient"
       ]
     },
     {
@@ -403,7 +410,9 @@
       "short": "The critic's categorical distribution over returns conditioned on state.",
       "details": "$v_\\psi(R_t\\mid s_t)$ is categorical over exponentially spaced return bins. Its expectation is $v_t$, and its likelihood at $R_t^\\lambda$ defines the critic loss.",
       "background": [
-        "Categorical"
+        "Categorical",
+        "Expectation",
+        "Twohot"
       ]
     },
     {
@@ -422,7 +431,9 @@
       "label": "Bootstrapped lambda-return",
       "short": "A target mixing reward $r_t$, critic value $v_t$, and recursively estimated future return.",
       "details": "$\\lambda$ interpolates between one-step value bootstrapping and longer-horizon returns, incorporating rewards beyond Dreamer's finite imagination horizon.",
-      "background": []
+      "background": [
+        "LambdaReturn"
+      ]
     },
     {
       "id": "critic_objective",
@@ -431,7 +442,9 @@
       "short": "The critic's negative log-likelihood objective over lambda-return targets.",
       "details": "It sums $\\log p_\\psi(R_t^\\lambda\\mid s_t)$ over imagined states. Minimizing its negative fits the full categorical return distribution, not only its mean.",
       "background": [
-        "NLL"
+        "NLL",
+        "Categorical",
+        "LambdaReturn"
       ]
     },
     {
@@ -441,7 +454,9 @@
       "short": "The critic log probability $\\log p_\\psi(R_t^\\lambda\\mid s_t)$ assigned to a $\\lambda$-return target.",
       "details": "Here $p_\\psi$ is the probability assigned by the categorical critic $v_\\psi$ to the target return. The negative sum of these terms trains the critic, with continuous returns represented by soft labels over transformed categorical bins.",
       "background": [
-        "NLL"
+        "NLL",
+        "Categorical",
+        "Twohot"
       ]
     },
     {
@@ -450,7 +465,9 @@
       "label": "$R_t^\\lambda$",
       "short": "The $\\lambda$-return target $R_t^\\lambda$ at time $t$.",
       "details": "$R_t^\\lambda$ combines $r_t$ with a continuation-gated mixture of $v_t$ and $R_{t+1}^\\lambda$. At horizon $T$, $R_T^\\lambda\\doteq v_T$.",
-      "background": []
+      "background": [
+        "LambdaReturn"
+      ]
     },
     {
       "id": "lambda_parameter",
@@ -458,14 +475,16 @@
       "label": "$\\lambda$",
       "short": "The mixing coefficient in the recursive lambda-return.",
       "details": "The factor $1-\\lambda$ weights direct critic bootstrapping, while $\\lambda$ weights $R_{t+1}^\\lambda$. It controls target horizon and the bias–variance tradeoff.",
-      "background": []
+      "background": [
+        "LambdaReturn"
+      ]
     },
     {
       "id": "entropy_regularization",
       "kind": "concept",
       "label": "Entropy regularization",
       "short": "An exploration bonus that favors less concentrated action distributions.",
-      "details": "Dreamer's actor includes $\\eta\\,\\mathrm H[\\pi_\\theta(a_t\\mid s_t)]$ as a bonus inside the negated return-maximization surrogate, so greater policy entropy lowers the minimized loss. Return normalization keeps this bonus meaningful across reward scales.",
+      "details": "The prose describes entropy as an exploration bonus. The displayed actor loss has a plus sign before the entropy term and commented-out grouping delimiters, making its scope under the leading minus ambiguous. The intended exploration bonus lowers a minimized loss as entropy rises; the printed expression is preserved.",
       "background": [
         "Entropy"
       ]
@@ -506,7 +525,7 @@
       "kind": "equation",
       "label": "$\\mathcal L$",
       "short": "The actor surrogate combining return maximization and entropy exploration.",
-      "details": "The first term is $\\log\\pi_\\theta(a_t\\mid s_t)$ weighted by normalized advantage; the second is $\\eta$-scaled policy entropy. The loss is minimized over actor parameters $\\theta$.",
+      "details": "The first term is $\\log\\pi_\\theta(a_t\\mid s_t)$ weighted by normalized advantage; the second is $\\eta$-scaled policy entropy. The loss is minimized over actor parameters $\\theta$. The displayed entropy sign/grouping is ambiguous relative to the exploration description; the tooltip does not silently correct the source.",
       "background": [
         "REINFORCE",
         "Entropy"
@@ -516,10 +535,12 @@
       "id": "normalized_advantage",
       "kind": "notation",
       "label": "$\\operatorname{sg}(R_t^\\lambda-v_\\psi(s_t))/\\max(1,S)$",
-      "short": "The stopped advantage $\\sg(R_t^\\lambda-v_\\psi(s_t))/\\max(1,S)$.",
+      "short": "The stopped normalized advantage $\\operatorname{sg}((R_t^\\lambda-v_\\psi(s_t))/\\max(1,S))$.",
       "details": "$R_t^\\lambda-v_\\psi(s_t)$ measures whether an imagined outcome exceeds the critic baseline. The robust denominator compares scales without magnifying small noisy returns.",
       "background": [
-        "REINFORCE"
+        "REINFORCE",
+        "StopGradient",
+        "LambdaReturn"
       ]
     },
     {
@@ -559,10 +580,11 @@
       "kind": "operator",
       "label": "$f(x,\\theta)$",
       "short": "A neural-network output in transformed target space.",
-      "details": "For deterministic regression, $f(x,\\theta)$ approximates $\\symlog(y)$; for categorical regression it supplies logits. $\\theta$ denotes the prediction-network parameters.",
+      "details": "Here $f(x,\\theta)$ is a scalar prediction of $\\operatorname{symlog}(y)$; $x$ is the input, $y$ the target, and $\\theta$ the generic prediction-network parameters. The later categorical network instead outputs a vector of logits.",
       "background": [
         "Symlog",
-        "Logits"
+        "Logits",
+        "RegressionNotation"
       ]
     },
     {
@@ -681,7 +703,8 @@
       "background": [
         "Twohot",
         "NLL",
-        "Softmax"
+        "Softmax",
+        "CrossEntropy"
       ]
     },
     {
@@ -723,7 +746,10 @@
       "details": "Dreamer represents the stochastic state as a vector of categorical variables. The 1% uniform mixture prevents any category from receiving exactly zero probability, while the straight-through estimator carries learning signals through samples.",
       "background": [
         "Categorical",
-        "Softmax"
+        "Softmax",
+        "DiscreteUniform",
+        "Gradient",
+        "StopGradient"
       ]
     },
     {
@@ -789,7 +815,8 @@
       "background": [
         "Categorical",
         "Softmax",
-        "Normal"
+        "Normal",
+        "Symexp"
       ]
     },
     {
@@ -808,7 +835,9 @@
       "label": "Replay ratio",
       "short": "The replay ratio measures how many training time steps are consumed per newly collected environment time step, before accounting for action repeat.",
       "details": "Dividing the replay ratio by the total time steps in a minibatch (batch size times sequence length) and by action repeat gives the number of parameter-update steps per environment step. It controls the trade-off between computation and data efficiency.",
-      "background": []
+      "background": [
+        "Replay"
+      ]
     },
     {
       "id": "agc",
@@ -817,7 +846,8 @@
       "short": "",
       "details": "Dreamer clips each tensor's gradient when its norm exceeds $30\\%$ of the corresponding weight norm, using $\\epsilon=10^{-3}$ to handle very small weights.",
       "background": [
-        "AGC"
+        "AGC",
+        "L2Norm"
       ]
     },
     {
@@ -877,15 +907,15 @@
       "kind": "symbol",
       "label": "$i$",
       "short": "$i$ selects one component of the twohot target vector.",
-      "details": "Only components at the neighboring-bin indices $k$ and $k+1$ are nonzero; all other components are zero.",
+      "details": "Only the bracketing-bin components can be nonzero. A target exactly on an interior bin gives probability one to that bin and zero to its neighbor.",
       "background": []
     },
     {
       "id": "nearest_bin_index_k",
       "kind": "symbol",
       "label": "$k$",
-      "short": "$k$ indexes the bin immediately below the scalar target $x$.",
-      "details": "The indicator sum counts bin locations smaller than $x$. The twohot interpolation then assigns mass to bins $b_k$ and $b_{k+1}$.",
+      "short": "$k$ counts the support bins strictly below the scalar target $x$.",
+      "details": "The indicator sum counts bin locations smaller than $x$. The twohot interpolation then assigns mass to bins $b_k$ and $b_{k+1}$. At an exact support point, the strict inequality selects the preceding interval; the first support point and out-of-range targets require boundary handling not specified by this displayed formula.",
       "background": [
         "Indicator"
       ]
@@ -940,6 +970,267 @@
       "background": [
         "SiLU"
       ]
+    },
+    {
+      "id": "lambda_return_next",
+      "kind": "symbol",
+      "label": "$R^\\lambda_{t+1}$",
+      "short": "The lambda-return at the next time step.",
+      "details": "The recursive target propagates later rewards back into the current target, weighted by discount, continuation, and lambda.",
+      "background": [
+        "LambdaReturn"
+      ]
+    },
+    {
+      "id": "lambda_return_terminal",
+      "kind": "symbol",
+      "label": "$R^\\lambda_T$",
+      "short": "The terminal bootstrap target at the rollout boundary.",
+      "details": "The paper defines $R^\\lambda_T=v_T$: the last target is the critic estimate, with no further recursive expansion.",
+      "background": [
+        "LambdaReturn"
+      ]
+    },
+    {
+      "id": "critic_value_terminal",
+      "kind": "symbol",
+      "label": "$v_T$",
+      "short": "The critic value at the final imagined state.",
+      "details": "This expected return initializes the backward return recursion and represents rewards beyond the rollout boundary.",
+      "background": [
+        "Expectation",
+        "LambdaReturn"
+      ]
+    },
+    {
+      "id": "replay_sequence_length",
+      "kind": "symbol",
+      "label": "$T$",
+      "short": "The length of a training sequence sampled from experience replay.",
+      "details": "The hyperparameter table sets this batch length to 64. It is distinct from the finite imagination length also denoted T in the learning equations.",
+      "background": []
+    },
+    {
+      "id": "imagination_length",
+      "kind": "symbol",
+      "label": "$T$",
+      "short": "The finite trajectory length used in the actor and critic equations.",
+      "details": "The learning section uses T=16 including the start state; the hyperparameter table separately lists an imagination horizon H=15. The source uses different conventions for these lengths.",
+      "background": []
+    },
+    {
+      "id": "imagination_horizon",
+      "kind": "symbol",
+      "label": "$H$",
+      "short": "The imagination horizon, listed as 15 in the hyperparameter table.",
+      "details": "The learning equations instead use T=16 for the trajectory including its start state. Keep this separate from replay batch length T=64.",
+      "background": []
+    },
+    {
+      "id": "batch_size",
+      "kind": "symbol",
+      "label": "$B$",
+      "short": "The number of sequences in a training minibatch, here 16.",
+      "details": "This B is a batch-size parameter, distinct from the support-bin vector B used for reward and value prediction.",
+      "background": []
+    },
+    {
+      "id": "return_limit",
+      "kind": "symbol",
+      "label": "$L$",
+      "short": "The lower bound on the return-normalization denominator, fixed at one.",
+      "details": "Using $\\max(1,S)$ scales down large advantages without amplifying small returns or approximation noise.",
+      "background": [
+        "LambdaReturn"
+      ]
+    },
+    {
+      "id": "critic_imagined_weight",
+      "kind": "symbol",
+      "label": "$\\beta_{\\mathrm{val}}$",
+      "short": "The critic loss weight for imagined trajectories, fixed at one.",
+      "details": "This scales critic fitting on world-model rollouts.",
+      "background": [
+        "NLL"
+      ]
+    },
+    {
+      "id": "critic_replay_weight",
+      "kind": "symbol",
+      "label": "$\\beta_{\\mathrm{repval}}$",
+      "short": "The critic loss weight on replay trajectories, fixed at 0.3.",
+      "details": "Imagination-start returns supply value targets for bootstrapping returns along replay rewards.",
+      "background": [
+        "Replay",
+        "LambdaReturn",
+        "NLL"
+      ]
+    },
+    {
+      "id": "actor_loss_weight",
+      "kind": "symbol",
+      "label": "$\\beta_{\\mathrm{pol}}$",
+      "short": "The overall actor loss scale, fixed at one.",
+      "details": "It is separate from the entropy coefficient within the actor objective.",
+      "background": [
+        "Entropy"
+      ]
+    },
+    {
+      "id": "critic_ema",
+      "kind": "symbol",
+      "label": "Critic EMA",
+      "short": "A slowly changing copy of the critic regularizes value predictions.",
+      "details": "The current critic is trained toward this averaged critic as an additional stabilizer. The table specifies decay 0.98 and regularizer scale one; return normalization uses a separate average with decay 0.99.",
+      "background": [
+        "EMA"
+      ]
+    },
+    {
+      "id": "experience_replay",
+      "kind": "concept",
+      "label": "Experience replay",
+      "short": "",
+      "details": "",
+      "background": [
+        "Replay"
+      ]
+    },
+    {
+      "id": "sign_operator",
+      "kind": "operator",
+      "label": "$\\operatorname{sign}$",
+      "short": "",
+      "details": "",
+      "background": [
+        "Sign"
+      ]
+    },
+    {
+      "id": "cross_entropy",
+      "kind": "concept",
+      "label": "Cross entropy",
+      "short": "",
+      "details": "",
+      "background": [
+        "CrossEntropy"
+      ]
+    },
+    {
+      "id": "sigmoid",
+      "kind": "operator",
+      "label": "Sigmoid",
+      "short": "",
+      "details": "",
+      "background": [
+        "Sigmoid"
+      ]
+    },
+    {
+      "id": "agc_epsilon",
+      "kind": "symbol",
+      "label": "$\\epsilon=10^{-3}$",
+      "short": "The small weight-norm floor used by adaptive gradient clipping.",
+      "details": "It keeps the clipping threshold usable for very small or initially zero weight tensors. This is distinct from the optimizer epsilon.",
+      "background": [
+        "AGC"
+      ]
+    },
+    {
+      "id": "laprop_epsilon",
+      "kind": "symbol",
+      "label": "$\\epsilon=10^{-20}$",
+      "short": "The numerical-stability constant in LaProp normalization.",
+      "details": "This very small constant is distinct from the weight-norm floor used by adaptive gradient clipping.",
+      "background": [
+        "LaProp"
+      ]
+    },
+    {
+      "id": "laprop_momentum",
+      "kind": "symbol",
+      "label": "$\\beta_1=0.9$",
+      "short": "The decay for momentum applied after gradient normalization.",
+      "details": "LaProp smooths normalized gradients with this coefficient.",
+      "background": [
+        "LaProp",
+        "EMA"
+      ]
+    },
+    {
+      "id": "laprop_second_moment",
+      "kind": "symbol",
+      "label": "$\\beta_2=0.99$",
+      "short": "The decay for the running squared-gradient normalization statistic.",
+      "details": "This coefficient controls RMSProp-style normalization before momentum is applied.",
+      "background": [
+        "LaProp",
+        "RMSProp",
+        "EMA"
+      ]
+    },
+    {
+      "id": "transpose",
+      "kind": "notation",
+      "label": "$^{\\mathsf T}$",
+      "short": "Transpose converts a column vector to a row vector for an inner product.",
+      "details": "Here it forms either a probability-weighted mean of support bins or a target-weighted sum of log probabilities. The superscript is distinct from the time-horizon symbol T.",
+      "background": [
+        "Expectation"
+      ]
+    },
+    {
+      "id": "softmax_general",
+      "kind": "operator",
+      "label": "Softmax",
+      "short": "",
+      "details": "",
+      "background": [
+        "Softmax",
+        "Categorical"
+      ]
+    },
+    {
+      "id": "logistic_regression",
+      "kind": "concept",
+      "label": "Logistic regression",
+      "short": "",
+      "details": "",
+      "background": [
+        "LogisticRegression"
+      ]
+    },
+    {
+      "id": "world_model_general",
+      "kind": "concept",
+      "label": "World model",
+      "short": "",
+      "details": "",
+      "background": [
+        "WorldModel",
+        "ModelBasedRL"
+      ]
+    },
+    {
+      "id": "categorical_general",
+      "kind": "concept",
+      "label": "Categorical distribution",
+      "short": "",
+      "details": "",
+      "background": [
+        "Categorical"
+      ]
+    },
+    {
+      "id": "percentile_span",
+      "kind": "operator",
+      "label": "$\\operatorname{Per}(R,95)-\\operatorname{Per}(R,5)$",
+      "short": "The difference between the 95th and 5th percentiles of the return batch.",
+      "details": "This raw span is smoothed separately to obtain the running actor normalization scale. Here R denotes the batch of return targets.",
+      "background": [
+        "Percentile",
+        "LambdaReturn"
+      ]
     }
   ],
   "background": {
@@ -948,7 +1239,9 @@
       "details": "It is nonnegative and equals zero only when the two distributions coincide; it is not symmetric. Optimizing a KL term pulls one distribution toward the other, and which side receives the stop-gradient decides which network learns.",
       "link": "https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence",
       "background": [
-        "Expectation"
+        "Expectation",
+        "KLNotation",
+        "StopGradient"
       ]
     },
     "NLL": {
@@ -964,7 +1257,10 @@
     "EMA": {
       "short": "An exponential moving average (EMA) with decay $\\rho$ updates a running estimate as $\\bar x\\leftarrow\\rho\\bar x+(1-\\rho)x$.",
       "details": "A decay $\\rho$ near one gives more weight to the previous estimate and less to the newest observation, smoothing noisy measurements into a stable running statistic.",
-      "link": "https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average"
+      "link": "https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average",
+      "background": [
+        "EMANotation"
+      ]
     },
     "REINFORCE": {
       "short": "REINFORCE is a score-function gradient estimator: $\\nabla_\\theta\\,\\mathbb E[R]\\approx\\mathbb E[\\sg(R)\\,\\nabla_\\theta\\log\\pi_\\theta(a)]$.",
@@ -973,7 +1269,9 @@
       "background": [
         "Expectation",
         "Gradient",
-        "PolicyGradient"
+        "PolicyGradient",
+        "PolicyGradientNotation",
+        "StopGradient"
       ]
     },
     "Categorical": {
@@ -981,7 +1279,8 @@
       "details": "For support $\\{1,\\ldots,K\\}$ and category probabilities $p_1,\\ldots,p_K$ satisfying $p_i\\ge0$ and $\\sum_{i=1}^K p_i=1$, its probability mass function is $\\Pr(X=i)=p_i$. Neural networks commonly obtain these probabilities from logits using softmax.",
       "link": "https://en.wikipedia.org/wiki/Categorical_distribution",
       "background": [
-        "CategoryProbabilities"
+        "CategoryProbabilities",
+        "Softmax"
       ]
     },
     "Bernoulli": {
@@ -989,7 +1288,8 @@
       "details": "With success probability $p\\in[0,1]$, its probability mass function is $\\Pr(X=x)=p^x(1-p)^{1-x}$ for $x\\in\\{0,1\\}$. Its negative log likelihood is binary cross-entropy.",
       "link": "https://en.wikipedia.org/wiki/Bernoulli_distribution",
       "background": [
-        "BernoulliParameter"
+        "BernoulliParameter",
+        "NLL"
       ]
     },
     "Softmax": {
@@ -997,7 +1297,8 @@
       "details": "It produces nonnegative weights summing to one over bins or classes. Its logarithm, log-softmax, is numerically stable and appears directly in cross-entropy losses.",
       "link": "https://en.wikipedia.org/wiki/Softmax_function",
       "background": [
-        "Logits"
+        "Logits",
+        "CategoryProbabilities"
       ]
     },
     "Percentile": {
@@ -1113,12 +1414,18 @@
     "LaProp": {
       "short": "LaProp is an adaptive optimizer that applies RMS-style gradient normalization before momentum.",
       "details": "This ordering differs from Adam, which accumulates first- and second-moment estimates from raw gradients.",
-      "link": "https://arxiv.org/abs/2002.04839"
+      "link": "https://arxiv.org/abs/2002.04839",
+      "background": [
+        "RMSProp"
+      ]
     },
     "RMSProp": {
       "short": "RMSProp rescales gradients using an exponential moving average of their squared magnitudes.",
       "details": "Coordinates with persistently large gradients receive smaller effective steps.",
-      "link": "https://en.wikipedia.org/wiki/Stochastic_gradient_descent#RMSProp"
+      "link": "https://en.wikipedia.org/wiki/Stochastic_gradient_descent#RMSProp",
+      "background": [
+        "EMA"
+      ]
     },
     "Adam": {
       "short": "Adam is an adaptive optimizer combining momentum-like first moments with second-moment gradient scaling.",
@@ -1178,13 +1485,22 @@
       "label": "Symmetric logarithm (symlog)",
       "short": "Symlog is the sign-preserving transform $\\operatorname{symlog}(x)=\\operatorname{sign}(x)\\ln(|x|+1)$.",
       "details": "It behaves approximately linearly near zero and logarithmically at large magnitudes, supporting both positive and negative targets. Its inverse function is symexp: $\\operatorname{symexp}(\\operatorname{symlog}(x))=x$.",
-      "link": "https://arxiv.org/abs/1209.6017"
+      "link": "https://arxiv.org/abs/1209.6017",
+      "background": [
+        "Sign",
+        "Symexp",
+        "RegressionNotation"
+      ]
     },
     "Symexp": {
       "label": "Symmetric exponential (symexp)",
       "short": "Symexp is the inverse function of symlog: $\\operatorname{symexp}(x)=\\operatorname{sign}(x)(\\exp(|x|)-1)$.",
       "details": "It satisfies $\\operatorname{symexp}(\\operatorname{symlog}(y))=y$ and maps uniformly spaced transformed coordinates to signed values whose magnitudes grow exponentially.",
-      "link": "https://arxiv.org/abs/2301.04104"
+      "link": "https://arxiv.org/abs/2301.04104",
+      "background": [
+        "Sign",
+        "RegressionNotation"
+      ]
     },
     "Twohot": {
       "label": "Two-hot encoding",
@@ -1192,7 +1508,9 @@
       "details": "For a scalar target $y$ lying between adjacent bins $b_i \\le y \\le b_{i+1}$, two-hot encoding assigns weights $w_i=(b_{i+1}-y)/(b_{i+1}-b_i)$ and $w_{i+1}=(y-b_i)/(b_{i+1}-b_i)$, with all other entries zero. Thus, although $y$ is continuous-valued, its training representation is a discrete distribution over the finite bin set. The weights sum to one and satisfy $w_i b_i+w_{i+1}b_{i+1}=y$, preserving the scalar through interpolation instead of snapping it to one bin. The network may predict probability on all bins and is trained with cross entropy against this two-bin target. At inference, the continuous-valued prediction is recovered as the probability-weighted average over all bin values. This combines continuous-valued prediction with the stable gradients of categorical learning.",
       "link": "https://arxiv.org/abs/1707.06887",
       "background": [
-        "Categorical"
+        "Categorical",
+        "TwohotNotation",
+        "CrossEntropy"
       ]
     },
     "RMSNorm": {
@@ -1207,14 +1525,76 @@
       "details": "Multiplying the input by its sigmoid gate yields a smooth, non-monotone activation also known as swish.",
       "link": "https://pytorch.org/docs/stable/generated/torch.nn.SiLU.html",
       "background": [
-        "Sigmoid"
+        "Sigmoid",
+        "RegressionNotation"
       ]
     },
     "Sigmoid": {
       "label": "Logistic sigmoid",
       "short": "The sigmoid function maps a real input $x$ to $\\sigma(x)=1/(1+e^{-x})$ in the open interval from zero to one.",
       "details": "It is commonly used as a gate or to parameterize the success probability of a Bernoulli distribution.",
-      "link": "https://en.wikipedia.org/wiki/Sigmoid_function"
+      "link": "https://en.wikipedia.org/wiki/Sigmoid_function",
+      "background": [
+        "RegressionNotation",
+        "Bernoulli"
+      ]
+    },
+    "LambdaReturn": {
+      "label": "Lambda-return",
+      "short": "A lambda-return mixes short and long bootstrapped return estimates.",
+      "details": "The mixing coefficient lies between zero and one. Larger values put more weight on longer reward sequences; the finite rollout ends with a critic value estimate.",
+      "link": "https://www.andrew.cmu.edu/course/10-703/textbook/BartoSutton.pdf"
+    },
+    "Replay": {
+      "label": "Experience replay",
+      "short": "Experience replay stores past interactions and reuses them for training.",
+      "details": "Sampling stored trajectories separates data collection from optimization. Dreamer combines fresh trajectories from an online queue with uniformly sampled replay trajectories.",
+      "link": "https://en.wikipedia.org/wiki/Experience_replay"
+    },
+    "Sign": {
+      "label": "Sign function",
+      "short": "The sign function returns $-1$, $0$, or $1$ for a negative, zero, or positive real input, respectively.",
+      "details": "It preserves the sign when symlog compresses magnitudes and symexp expands them.",
+      "link": "https://en.wikipedia.org/wiki/Sign_function"
+    },
+    "CrossEntropy": {
+      "label": "Cross entropy",
+      "short": "Cross entropy measures how well predicted probabilities match a target probability distribution.",
+      "details": "For soft targets, it is the target-probability-weighted average of negative log predicted probabilities. Two-hot regression therefore trains on both neighboring bins.",
+      "link": "https://en.wikipedia.org/wiki/Cross-entropy",
+      "background": [
+        "NLL"
+      ]
+    },
+    "RegressionNotation": {
+      "label": "Scalar regression notation",
+      "short": "$x$ denotes the input or scalar being transformed, $y$ a scalar target, and $f$ a prediction function.",
+      "details": "A hat denotes a prediction; $\\theta$ denotes the local prediction parameters. These generic symbols have different roles from the actor parameters and sensory observation sequence.",
+      "link": "https://en.wikipedia.org/wiki/Regression_analysis"
+    },
+    "TwohotNotation": {
+      "label": "Two-hot interpolation notation",
+      "short": "$y$ is the scalar target; $b_i$ and $b_{i+1}$ are adjacent support values that bracket it.",
+      "details": "$i$ is a bin index and $w_i,w_{i+1}$ are the nonzero interpolation probabilities. Exact endpoint and out-of-range handling requires a boundary convention.",
+      "link": "https://en.wikipedia.org/wiki/Linear_interpolation"
+    },
+    "EMANotation": {
+      "label": "Moving-average notation",
+      "short": "$x$ is the newest observation, $\\bar x$ the running estimate, and $\\rho$ the decay coefficient between zero and one.",
+      "details": "The update arrow means that the old running estimate is replaced by the weighted combination.",
+      "link": "https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average"
+    },
+    "KLNotation": {
+      "label": "Divergence notation",
+      "short": "$q$ and $p$ denote probability mass functions or densities on the same support.",
+      "details": "The expectation is taken under $q$; logarithms are natural, so the divergence is measured in nats.",
+      "link": "https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence"
+    },
+    "PolicyGradientNotation": {
+      "label": "Policy-gradient notation",
+      "short": "$\\theta$ is the policy parameter vector, $a$ a sampled action, $\\pi_\\theta(a)$ its probability or density, and $R$ the return used to weight the update.",
+      "details": "The score-function identity assumes that the return has no additional direct dependence on policy parameters. A baseline can reduce variance.",
+      "link": "https://en.wikipedia.org/wiki/Policy_gradient_method"
     }
   }
 }
