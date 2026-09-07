@@ -62,10 +62,12 @@ body.side-mode .level-accordion[open]::before { left:calc(4.4% - var(--ip-shift-
 .ip-background p { margin:6px 0; font-size:14px; line-height:1.45; }
 .close-detail { position:absolute; right:9px; top:7px; border:0; background:transparent; color:var(--muted); font:22px/1 system-ui,sans-serif; cursor:pointer; }
 .tooltip { position:fixed; display:none; z-index:60; max-width:380px; pointer-events:none; background:#fff; color:var(--ink); padding:11px 13px; border:1px solid rgba(0,0,0,.12); border-radius:8px; box-shadow:0 8px 28px rgba(0,0,0,.18); font-size:15px; line-height:1.45; }
+#tooltip { padding-bottom:6px; }
 .ip-header .reading-guide { color:var(--accent); font-weight:700; white-space:nowrap; text-decoration:none; }
 .ip-header .reading-guide:hover { text-decoration:underline; }
 .reading-guide-text { white-space:pre-wrap; }
 #detail-content::after { content:"AI generated"; display:block; margin-top:12px; color:var(--muted); font:12px/1.4 system-ui,sans-serif; text-align:right; }
+#tooltip::after { content:"AI generated"; display:block; margin-top:2px; color:var(--muted); font:10px/1 system-ui,sans-serif; text-align:right; }
 .tooltip.figure-tooltip { padding:8px; max-width:calc(100vw - 28px); }
 .figure-tooltip-image { display:block; width:100%; height:auto; max-height:55vh; object-fit:contain; }
 .figure-tooltip-caption { margin-top:8px; padding:0 3px 2px; font-size:14px; line-height:1.4; }

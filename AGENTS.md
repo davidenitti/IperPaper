@@ -64,6 +64,9 @@ Before generating or regenerating source or readers, inspect existing annotation
 and citation metadata. Reuse annotations when valid and their IDs match the TeX;
 regenerate only when missing, invalid, or the user requests updated annotations.
 
+After creating or updating the annotations, double-check that all annotations are correct and follow the project instructions;
+fix or add any incorrect or missing annotations before validation or build.
+
 When rebuilding an existing paper whose TeX contains `\iperpaper` wrappers or
 whose project contains an `*.annotations.json` file, always pass that matching
 annotations JSON as the build command's second positional argument. The

@@ -147,6 +147,14 @@ Follow AGENTS.md for /path/to/paper.pdf
 Follow AGENTS.md for https://arxiv.org/pdf/2401.01234v2
 ```
 
+I suggest doing a second pass after the AI agent has finished:
+
+```text
+Double-check that all annotations are correct and follow the project instructions;
+fix or add any incorrect or missing annotations, then validate and rebuild if changes are made.
+```
+
+
 The agent should recover matching original TeX when possible, read `prompts/enhance.md`, preserve the project and assets, add annotation targets, write metadata, validate its work, build the HTML, and inspect the output. Before regenerating source or readers, the AI agent must inspect existing annotation and citation metadata in `annotated/`. The agent must reuse valid annotation metadata when its IDs match the TeX and regenerate it only when it is missing, invalid, or the user requests updated annotations.
 
 `AGENTS.md` is the operational workflow for coding agents. `prompts/enhance.md` is the detailed annotation contract.
